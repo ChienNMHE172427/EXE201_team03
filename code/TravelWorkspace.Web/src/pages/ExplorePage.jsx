@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import './ExplorePage.css';
 
@@ -23,11 +24,29 @@ const ExplorePage = () => {
   const [searchLocationQuery, setSearchLocationQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Tất cả");
 
+  const location = useLocation();
+
   useEffect(() => {
     const fetchTrips = async () => {
       try {
         const res = await api.get('/Trip');
-        setTrips(res.data);
+        const loadedTrips = res.data;
+        setTrips(loadedTrips);
+
+        // Đọc tham số từ URL
+        const params = new URLSearchParams(location.search);
+        const tripIdParam = params.get('tripId');
+        const categoryParam = params.get('category');
+
+        if (tripIdParam) {
+          const matchedTrip = loadedTrips.find(t => t.id.toString() === tripIdParam);
+          if (matchedTrip) {
+            setSelectedTrip(matchedTrip);
+            if (categoryParam) {
+              setActiveCategory(categoryParam);
+            }
+          }
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -35,7 +54,7 @@ const ExplorePage = () => {
       }
     };
     fetchTrips();
-  }, []);
+  }, [location.search]);
 
   const handleSelectTrip = (trip) => {
     setSelectedTrip(trip);

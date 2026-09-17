@@ -33,9 +33,23 @@ namespace TravelWorkspace.API.Services
 
         public async Task<TripDto> CreateTripAsync(CreateTripDto request, int userId)
         {
+            var isDuplicate = await _context.Trips.AnyAsync(t => 
+                t.OwnerId == userId &&
+                t.Title == request.Title &&
+                t.Origin == request.Origin &&
+                t.Destination == request.Destination &&
+                t.StartDate == request.StartDate &&
+                t.EndDate == request.EndDate);
+
+            if (isDuplicate)
+            {
+                throw new InvalidOperationException("Chuyến đi với dữ liệu giống hệt đã tồn tại.");
+            }
+
             var trip = new Trip
             {
                 Title = request.Title,
+                Origin = request.Origin,
                 Destination = request.Destination,
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
@@ -59,6 +73,7 @@ namespace TravelWorkspace.API.Services
             if (trip == null) return null;
 
             trip.Title = request.Title;
+            trip.Origin = request.Origin;
             trip.Destination = request.Destination;
             trip.StartDate = request.StartDate;
             trip.EndDate = request.EndDate;
@@ -112,6 +127,7 @@ namespace TravelWorkspace.API.Services
             {
                 Id = trip.Id,
                 Title = trip.Title,
+                Origin = trip.Origin,
                 Destination = trip.Destination,
                 StartDate = trip.StartDate,
                 EndDate = trip.EndDate,

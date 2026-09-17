@@ -3,6 +3,8 @@ import api from '../services/api';
 import './BudgetPage.css';
 
 const BudgetPage = () => {
+  const [trips, setTrips] = useState([]);
+  const [selectedTripId, setSelectedTripId] = useState(null);
   const [trip, setTrip] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,56 +13,101 @@ const BudgetPage = () => {
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
 
-  // Lấy tripId từ LocalStorage (do Dashboard thiết lập) hoặc gọi Trip cuối
-  const tripId = localStorage.getItem('currentTripId');
-
-  const fetchBudget = async () => {
-    try {
-      if (!tripId) {
-        // Fallback: lấy chuyến đi đầu tiên
-        const t = await api.get('/Trip');
-        if (t.data.length > 0) {
-          localStorage.setItem('currentTripId', t.data[0].id);
-          window.location.reload();
-          return;
-        }
-      } else {
-        const [tripRes, expRes] = await Promise.all([
-          api.get(`/Trip/${tripId}`),
-          api.get(`/trips/${tripId}/expenses`)
-        ]);
-        setTrip(tripRes.data);
-        setExpenses(expRes.data);
+  // Lấy danh sách chuyến đi ban đầu
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const res = await api.get('/Trip');
+        setTrips(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
+    };
+    fetchTrips();
+  }, []);
+
+  const fetchBudget = async (id) => {
+    try {
+      const [tripRes, expRes] = await Promise.all([
+        api.get(`/Trip/${id}`),
+        api.get(`/trips/${id}/expenses`)
+      ]);
+      setTrip(tripRes.data);
+      setExpenses(expRes.data);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBudget();
-  }, [tripId]);
+    if (selectedTripId) {
+      fetchBudget(selectedTripId);
+    }
+  }, [selectedTripId]);
 
   const handleAddExpense = async () => {
-    if (!desc || !amount) return;
+    if (!desc || !amount || !selectedTripId) return;
     try {
-      await api.post(`/trips/${tripId}/expenses`, {
+      await api.post(`/trips/${selectedTripId}/expenses`, {
         description: desc,
         amount: parseFloat(amount)
       });
       setDesc('');
       setAmount('');
       setShowForm(false);
-      fetchBudget(); // reload
+      fetchBudget(selectedTripId); // reload
     } catch(err) {
       alert('Lỗi: Không thể thêm chi phí.');
     }
   };
 
-  if (loading) return <div className="page-container"><h2 style={{marginTop: 40}}>Đang tải ngân sách...</h2></div>;
-  if (!trip) return <div className="page-container"><h2 style={{marginTop: 40}}>Chưa có chuyến đi nào được chọn.</h2></div>;
+  const handleSelectTrip = (t) => {
+    setSelectedTripId(t.id);
+  };
+
+  const handleBack = () => {
+    setSelectedTripId(null);
+    setTrip(null);
+  };
+
+  if (loading) return <div className="page-container"><h2 style={{marginTop: 40}}>Đang tải...</h2></div>;
+
+  if (!selectedTripId || !trip) {
+    return (
+      <div className="page-container">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Chi phí nhóm</h1>
+            <p className="page-subtitle">Chọn một lịch trình để kiểm soát ngân sách và chi tiêu.</p>
+          </div>
+        </div>
+        
+        <div className="explore-grid mt-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', marginTop: '32px' }}>
+          {trips.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)' }}>Bạn chưa có chuyến đi nào.</p>
+          ) : (
+            trips.map(t => (
+              <div key={t.id} onClick={() => handleSelectTrip(t)} style={{ cursor: 'pointer', background: '#fff', borderRadius: '16px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', transition: 'transform 0.2s', border: '1px solid #eaeaea' }}>
+                <div style={{ height: '120px', background: 'linear-gradient(135deg, #FF9A9E, #FECFEF)' }}></div>
+                <div style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text)' }}>{t.title}</h3>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: '1.5' }}>
+                    👥 Nhóm: {t.numberOfParticipants || 1} người <br/>
+                    📍 Điểm đến: {t.destination}
+                  </p>
+                  <div style={{ marginTop: '16px', fontWeight: '600', color: '#ff7b89', fontSize: '14px' }}>
+                    + Mở quản lý chi phí
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
   const remaining = trip.budget - totalSpent;
@@ -68,6 +115,12 @@ const BudgetPage = () => {
 
   return (
     <div className="page-container">
+      <div style={{ marginBottom: '24px' }}>
+        <button onClick={handleBack} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
+          ← Quay lại danh sách Lịch trình
+        </button>
+      </div>
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Chi phí: {trip.title}</h1>

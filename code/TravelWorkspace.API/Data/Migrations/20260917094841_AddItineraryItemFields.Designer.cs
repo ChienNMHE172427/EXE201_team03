@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TravelWorkspace.API.Data;
 
 #nullable disable
 
-namespace TravelWorkspace.API.Migrations
+namespace TravelWorkspace.API.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917094841_AddItineraryItemFields")]
+    partial class AddItineraryItemFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -221,10 +224,6 @@ namespace TravelWorkspace.API.Migrations
 
                     b.Property<int>("NumberOfParticipants")
                         .HasColumnType("int");
-
-                    b.Property<string>("Origin")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OwnerId")
                         .HasColumnType("int");

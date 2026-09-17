@@ -17,9 +17,9 @@ namespace TravelWorkspace.API.Controllers
         }
 
         [HttpGet("itinerary")]
-        public async Task<ActionResult> GenerateItinerary(string destination, int days = 3)
+        public async Task<ActionResult> GenerateItinerary(string origin, string destination, int days = 3)
         {
-            var result = await _geminiService.GenerateItineraryAsync(destination, days);
+            var result = await _geminiService.GenerateItineraryAsync(origin, destination, days);
             return Ok(new { Suggestion = result });
         }
     }

@@ -4,6 +4,7 @@ namespace TravelWorkspace.API.Models
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
+        public string Origin { get; set; } = string.Empty;
         public string Destination { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

@@ -12,7 +12,9 @@ const DashboardPage = () => {
     const fetchTrips = async () => {
       try {
         const res = await api.get('/Trip');
-        setTrips(res.data);
+        // Xếp chuyến đi mới tạo lên đầu
+        const sortedTrips = res.data.sort((a, b) => new Date(b.createdAt || new Date()) - new Date(a.createdAt || new Date()));
+        setTrips(sortedTrips);
       } catch (err) {
         console.error(err);
       } finally {
@@ -21,6 +23,20 @@ const DashboardPage = () => {
     };
     fetchTrips();
   }, []);
+
+  const handleDeleteTrip = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa chuyến đi này không? Mọi dữ liệu liên quan sẽ bị xóa.")) return;
+    try {
+      await api.delete(`/Trip/${id}`);
+      setTrips(trips.filter(t => t.id !== id));
+      if (localStorage.getItem('currentTripId') == id) {
+        localStorage.removeItem('currentTripId');
+      }
+    } catch (err) {
+      alert("Không thể xóa chuyến đi.");
+      console.error(err);
+    }
+  };
 
   if (loading) {
     return (
@@ -61,7 +77,8 @@ const DashboardPage = () => {
                   localStorage.setItem('currentTripId', trip.id);
                   navigate('/itinerary');
                 }}>Mở chi tiết</button>
-                <div className="member-avatars">
+                <button className="btn-danger-sm" onClick={() => handleDeleteTrip(trip.id)} style={{marginLeft: '12px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>Xóa</button>
+                <div className="member-avatars" style={{marginLeft: 'auto'}}>
                   <div className="avatar-circle c1"></div>
                   <span className="member-count">{trip.numberOfParticipants} thành viên</span>
                   <span className="member-count" style={{marginLeft: 16}}>Ngân sách: {trip.budget.toLocaleString('vi-VN')} đ</span>

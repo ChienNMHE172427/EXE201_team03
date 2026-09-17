@@ -6,21 +6,33 @@ import './CreateTripPage.css';
 const CreateTripPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    origin: 'Hà Nội, Việt Nam',
     destination: 'Ninh Bình, Việt Nam',
     startDate: '2026-09-16',
     endDate: '2026-09-20',
     budget: '12000000',
     numberOfParticipants: '4',
-    preferences: 'Thiên nhiên'
+    preferences: ['Thiên nhiên']
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const tags = ['Thiên nhiên', 'Ẩm thực', 'Văn hóa', 'Chụp ảnh', 'Đi chậm'];
+  const tags = ['Thiên nhiên', 'Ẩm thực', 'Chụp ảnh', 'Tham quan'];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleTagToggle = (tag) => {
+    setFormData(prev => {
+      const prefs = prev.preferences;
+      if (prefs.includes(tag)) {
+        return { ...prev, preferences: prefs.filter(t => t !== tag) };
+      } else {
+        return { ...prev, preferences: [...prefs, tag] };
+      }
+    });
   };
 
   const handleSubmit = async () => {
@@ -29,25 +41,71 @@ const CreateTripPage = () => {
     
     try {
       const payload = {
-        title: `Chuyến đi tới ${formData.destination}`,
+        title: `Từ ${formData.origin} đi ${formData.destination}`,
+        origin: formData.origin,
         destination: formData.destination,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         budget: parseFloat(formData.budget),
         numberOfParticipants: parseInt(formData.numberOfParticipants),
-        preferences: formData.preferences
+        preferences: formData.preferences.join(', ')
       };
 
       const res = await api.post('/Trip', payload);
-      // Giả sử API trả về chuyến đi mới tạo, chuyển hướng sang dashboard
       navigate(`/dashboard`);
     } catch (err) {
       console.error(err);
-      setError('Có lỗi xảy ra khi tạo chuyến đi. Bạn đã đăng nhập chưa?');
+      if (err.response && err.response.data) {
+        setError(typeof err.response.data === 'string' ? err.response.data : 'Chuyến đi với dữ liệu giống hệt đã tồn tại.');
+      } else {
+        setError('Có lỗi xảy ra khi tạo chuyến đi. Bạn đã đăng nhập chưa?');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const calculateAllocation = () => {
+    const totalBudget = parseFloat(formData.budget) || 0;
+    
+    // Tính toán số đêm và số phòng (giả sử 2 người/phòng, lấy mức trung bình là 375k/phòng/đêm để tổng ra khoảng giữa)
+    const days = Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24));
+    const nights = Math.max(0, days); // Số đêm lưu trú
+    const participants = parseInt(formData.numberOfParticipants) || 1;
+    const rooms = Math.ceil(participants / 2);
+    const luuTruCost = nights * rooms * 375000;
+    
+    // Phần trăm cho lưu trú
+    let luuTruPercent = 0;
+    if (totalBudget > 0 && nights > 0) {
+      luuTruPercent = Math.min(100, Math.round((luuTruCost / totalBudget) * 100));
+    }
+    
+    const remainingPercent = 100 - luuTruPercent;
+
+    // Trọng số cho 3 hạng mục còn lại
+    let weights = { anUong: 35, diChuyen: 30, traiNghiem: 35 };
+    const prefs = formData.preferences;
+    
+    if (prefs.includes('Thiên nhiên')) { weights.traiNghiem += 15; weights.diChuyen += 10; }
+    if (prefs.includes('Ẩm thực')) { weights.anUong += 25; }
+    if (prefs.includes('Chụp ảnh')) { weights.diChuyen += 10; weights.traiNghiem += 15; }
+    if (prefs.includes('Tham quan')) { weights.traiNghiem += 20; weights.diChuyen += 15; }
+
+    const totalWeight = weights.anUong + weights.diChuyen + weights.traiNghiem;
+    
+    const alloc = {
+      luuTru: luuTruPercent,
+      anUong: Math.round((weights.anUong / totalWeight) * remainingPercent),
+      diChuyen: Math.round((weights.diChuyen / totalWeight) * remainingPercent)
+    };
+    alloc.traiNghiem = 100 - alloc.luuTru - alloc.anUong - alloc.diChuyen;
+
+    return alloc;
+  };
+
+  const allocation = calculateAllocation();
+  const totalBudget = parseFloat(formData.budget) || 0;
 
   return (
     <div className="page-container">
@@ -91,9 +149,15 @@ const CreateTripPage = () => {
 
           {error && <div style={{background: '#FFEBEB', color: '#D32F2F', padding: 12, borderRadius: 8, marginBottom: 16}}>{error}</div>}
 
-          <div className="form-group">
-            <label>ĐIỂM ĐẾN</label>
-            <input name="destination" type="text" className="form-input" placeholder="VD: Ninh Bình, Việt Nam" value={formData.destination} onChange={handleInputChange} />
+          <div className="form-row">
+            <div className="form-group">
+              <label>NƠI BẮT ĐẦU</label>
+              <input name="origin" type="text" className="form-input" placeholder="VD: Hà Nội, Việt Nam" value={formData.origin} onChange={handleInputChange} />
+            </div>
+            <div className="form-group">
+              <label>ĐIỂM ĐẾN</label>
+              <input name="destination" type="text" className="form-input" placeholder="VD: Ninh Bình, Việt Nam" value={formData.destination} onChange={handleInputChange} />
+            </div>
           </div>
 
           <div className="form-row">
@@ -124,8 +188,8 @@ const CreateTripPage = () => {
               {tags.map(t => (
                 <div 
                   key={t} 
-                  className={`tag ${formData.preferences === t ? 'active' : ''}`}
-                  onClick={() => setFormData(prev => ({ ...prev, preferences: t }))}
+                  className={`tag ${formData.preferences.includes(t) ? 'active' : ''}`}
+                  onClick={() => handleTagToggle(t)}
                 >
                   {t}
                 </div>
@@ -147,30 +211,29 @@ const CreateTripPage = () => {
           <h3 className="summary-title">Tóm tắt chuyến đi</h3>
           
           <div className="summary-card">
-            <div className="summary-dest">NINH BÌNH</div>
-            <div className="summary-main">5 ngày · 4 người</div>
-            <div className="summary-date">16 – 20 tháng 09</div>
-            <div className="summary-budget">Dự kiến 3.000.000đ / người</div>
+            <div className="summary-dest">{formData.destination || 'NINH BÌNH'}</div>
+            <div className="summary-main">Nhóm {formData.numberOfParticipants} người</div>
+            <div className="summary-budget">Tổng ngân sách {totalBudget.toLocaleString('vi-VN')} đ</div>
           </div>
 
           <div className="allocation-box">
             <div className="allocation-header">PHÂN BỔ GỢI Ý</div>
             
             <div className="alloc-item">
-              <div className="alloc-text"><span>Lưu trú</span><span>35%</span></div>
-              <div className="alloc-bar"><div className="fill" style={{width: '35%'}}></div></div>
+              <div className="alloc-text"><span>Lưu trú ({(totalBudget * allocation.luuTru / 100).toLocaleString('vi-VN')} đ)</span><span>{allocation.luuTru}%</span></div>
+              <div className="alloc-bar"><div className="fill" style={{width: `${allocation.luuTru}%`}}></div></div>
             </div>
             <div className="alloc-item">
-              <div className="alloc-text"><span>Ăn uống</span><span>25%</span></div>
-              <div className="alloc-bar"><div className="fill" style={{width: '25%'}}></div></div>
+              <div className="alloc-text"><span>Ăn uống ({(totalBudget * allocation.anUong / 100).toLocaleString('vi-VN')} đ)</span><span>{allocation.anUong}%</span></div>
+              <div className="alloc-bar"><div className="fill" style={{width: `${allocation.anUong}%`}}></div></div>
             </div>
             <div className="alloc-item">
-              <div className="alloc-text"><span>Di chuyển</span><span>20%</span></div>
-              <div className="alloc-bar"><div className="fill" style={{width: '20%'}}></div></div>
+              <div className="alloc-text"><span>Di chuyển ({(totalBudget * allocation.diChuyen / 100).toLocaleString('vi-VN')} đ)</span><span>{allocation.diChuyen}%</span></div>
+              <div className="alloc-bar"><div className="fill" style={{width: `${allocation.diChuyen}%`}}></div></div>
             </div>
             <div className="alloc-item">
-              <div className="alloc-text"><span>Trải nghiệm</span><span>20%</span></div>
-              <div className="alloc-bar"><div className="fill" style={{width: '20%'}}></div></div>
+              <div className="alloc-text"><span>Trải nghiệm ({(totalBudget * allocation.traiNghiem / 100).toLocaleString('vi-VN')} đ)</span><span>{allocation.traiNghiem}%</span></div>
+              <div className="alloc-bar"><div className="fill" style={{width: `${allocation.traiNghiem}%`}}></div></div>
             </div>
           </div>
 

@@ -44,8 +44,12 @@ namespace TravelWorkspace.API.Controllers
         public async Task<ActionResult<TripDto>> CreateTrip(CreateTripDto request)
         {
             var userId = GetUserId();
-            var trip = await _tripService.CreateTripAsync(request, userId);
-            return CreatedAtAction(nameof(GetTrip), new { id = trip.Id }, trip);
+            try {
+                var trip = await _tripService.CreateTripAsync(request, userId);
+                return CreatedAtAction(nameof(GetTrip), new { id = trip.Id }, trip);
+            } catch (InvalidOperationException ex) {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("{id}")]

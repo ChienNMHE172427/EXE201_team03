@@ -14,18 +14,18 @@ namespace TravelWorkspace.API.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateItineraryAsync(string destination, int days)
+        public async Task<string> GenerateItineraryAsync(string origin, string destination, int days)
         {
             var apiKey = _configuration["Gemini:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
                 // Trả về dữ liệu giả lập (Mock data) nếu chưa có API Key
-                return $@"## Lịch trình gợi ý cho {destination} ({days} ngày) 🌟
+                return $@"## Lịch trình gợi ý đi {destination} từ {origin} ({days} ngày) 🌟
 
 Đây là lịch trình mẫu được AI tạo tự động (Mock Data) vì bạn chưa cấu hình Gemini API Key. Tuy nhiên, nó vẫn hiển thị hoàn hảo trên giao diện!
 
-### Ngày 1: Khám phá vẻ đẹp thiên nhiên
-* **Sáng (08:00):** Khởi hành và di chuyển đến trung tâm {destination}. Nhận phòng khách sạn, nghỉ ngơi.
+### Ngày 1: Khởi hành và Khám phá
+* **Sáng (08:00):** Khởi hành từ {origin} và di chuyển đến trung tâm {destination}. Nhận phòng khách sạn, nghỉ ngơi.
 * **Trưa (12:00):** Thưởng thức đặc sản địa phương tại nhà hàng nổi tiếng nhất khu vực.
 * **Chiều (14:30):** Bắt đầu tham quan các danh lam thắng cảnh chính. Đừng quên mang theo máy ảnh!
 * **Tối (19:00):** Dạo quanh phố đi bộ, thưởng thức ẩm thực đường phố và mua đồ lưu niệm.
@@ -39,7 +39,7 @@ namespace TravelWorkspace.API.Services
 > **Mẹo nhỏ từ AI:** Nhớ mang theo áo khoác nhẹ và dù dự phòng vì thời tiết tại {destination} có thể thay đổi thất thường. Chúc bạn có một chuyến đi tuyệt vời!";
             }
 
-            var prompt = $"Create a detailed {days}-day travel itinerary for {destination}. Include places to visit and recommended food.";
+            var prompt = $"Create a detailed {days}-day travel itinerary departing from {origin} to {destination}. Include realistic transportation methods from {origin} to {destination}, places to visit, and recommended food.";
             var requestBody = new
             {
                 contents = new[]
@@ -77,6 +77,181 @@ namespace TravelWorkspace.API.Services
             catch
             {
                 return "Error parsing AI response.";
+            }
+        }
+
+        public async Task<List<TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto>> GenerateItineraryJsonAsync(string origin, string destination, int days, DateTime startDate)
+        {
+            var mockData = new List<TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto>
+            {
+                new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Khởi hành từ {origin} đi {destination}", Location = origin, Transport = "Xe khách/Tàu hỏa/Máy bay (tùy khoảng cách)", StartTime = startDate.AddHours(7), EndTime = startDate.AddHours(9), Status = "Chưa bắt đầu" },
+                new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Đến {destination}, Nhận phòng khách sạn & Nghỉ ngơi", Location = "Khách sạn trung tâm", Transport = "Taxi", StartTime = startDate.AddHours(12), EndTime = startDate.AddHours(14), Status = "Chưa bắt đầu" },
+                new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Tham quan địa điểm nổi tiếng", Location = "Khu du lịch sinh thái", Transport = "Xe máy", StartTime = startDate.AddHours(14).AddMinutes(30), EndTime = startDate.AddHours(17), Status = "Chưa bắt đầu" },
+                new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Ăn tối đặc sản địa phương", Location = "Nhà hàng trung tâm", Transport = "Đi bộ", StartTime = startDate.AddHours(18).AddMinutes(30), EndTime = startDate.AddHours(20), Status = "Chưa bắt đầu" }
+            };
+
+            var apiKey = _configuration["Gemini:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return mockData;
+            }
+
+            var prompt = $"Create a detailed {days}-day travel itinerary departing from {origin} and traveling to {destination} starting from {startDate:yyyy-MM-dd}. Return ONLY a raw JSON array of objects. Each object must have exactly these keys: 'title' (string, e.g. 'Từ {origin} đi {destination}', representing origin to destination or activity), 'location' (string), 'startTime' (ISO 8601 string), 'endTime' (ISO 8601 string), 'transport' (string like 'Taxi', 'Máy bay', 'Xe máy', 'Đi bộ', but BE REALISTIC based on the distance between {origin} and {destination}!), 'notes' (string, can be empty). Provide roughly 3-5 activities per day.";
+            
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new[]
+                        {
+                            new { text = prompt }
+                        }
+                    }
+                }
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return mockData;
+            }
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseString);
+            try
+            {
+                var text = doc.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString() ?? "[]";
+
+                text = text.Replace("```json", "").Replace("```", "").Trim();
+                
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var items = JsonSerializer.Deserialize<List<TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto>>(text, options);
+                
+                if (items != null && items.Any())
+                {
+                    foreach (var item in items)
+                    {
+                        item.Status = "Chưa bắt đầu";
+                        if (string.IsNullOrEmpty(item.Assignee)) item.Assignee = "";
+                    }
+                    return items;
+                }
+                return mockData;
+            }
+            catch
+            {
+                return mockData;
+            }
+        }
+
+        public async Task<TravelWorkspace.API.Models.DTOs.AiChatResponseDto> ChatAndModifyItineraryAsync(string userMessage, List<TravelWorkspace.API.Models.ItineraryItem> currentItems)
+        {
+            var apiKey = _configuration["Gemini:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                var mockReply = new TravelWorkspace.API.Models.DTOs.AiChatResponseDto
+                {
+                    Reply = "Đây là trả lời mẫu vì chưa có API Key. Mình đã tiếp nhận yêu cầu: '" + userMessage + "'.",
+                    Items = currentItems.Select(i => new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto
+                    {
+                        Title = i.Title,
+                        Location = i.Location,
+                        StartTime = i.StartTime,
+                        EndTime = i.EndTime,
+                        Transport = i.Transport,
+                        Notes = i.Notes,
+                        Assignee = i.Assignee,
+                        Status = i.Status
+                    }).ToList()
+                };
+                return mockReply;
+            }
+
+            var currentItineraryJson = JsonSerializer.Serialize(currentItems.Select(i => new
+            {
+                i.Title, i.Location, i.StartTime, i.EndTime, i.Transport, i.Notes
+            }));
+
+            var prompt = $@"You are an AI travel assistant. The user wants to change their itinerary. 
+Their current itinerary is: {currentItineraryJson}
+Their request is: ""{userMessage}""
+
+Respond with ONLY a raw JSON object containing EXACTLY two keys:
+1. 'reply': A friendly string responding to the user in Vietnamese (e.g., 'Mình đã thêm bữa tối vào lịch trình cho bạn rồi nhé!').
+2. 'items': A JSON array of the fully updated itinerary objects in the same format: title, location, startTime (ISO 8601), endTime (ISO 8601), transport, notes. Keep all original items that were not modified. Add, update, or remove items based on the user's request.
+
+Do NOT use markdown code blocks like ```json. Just return the raw JSON object.";
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new[]
+                        {
+                            new { text = prompt }
+                        }
+                    }
+                }
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+
+            var fallbackResponse = new TravelWorkspace.API.Models.DTOs.AiChatResponseDto
+            {
+                Reply = "Xin lỗi, mình gặp lỗi khi kết nối với AI.",
+                Items = currentItems.Select(i => new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto
+                {
+                    Title = i.Title, Location = i.Location, StartTime = i.StartTime, EndTime = i.EndTime, Transport = i.Transport, Notes = i.Notes, Assignee = i.Assignee, Status = i.Status
+                }).ToList()
+            };
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return fallbackResponse;
+            }
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseString);
+            try
+            {
+                var text = doc.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString() ?? "{}";
+
+                text = text.Replace("```json", "").Replace("```", "").Trim();
+                
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var result = JsonSerializer.Deserialize<TravelWorkspace.API.Models.DTOs.AiChatResponseDto>(text, options);
+                
+                if (result != null && result.Items != null)
+                {
+                    foreach (var item in result.Items)
+                    {
+                        if (string.IsNullOrEmpty(item.Status)) item.Status = "Chưa bắt đầu";
+                        if (string.IsNullOrEmpty(item.Assignee)) item.Assignee = "";
+                    }
+                    return result;
+                }
+                return fallbackResponse;
+            }
+            catch
+            {
+                return fallbackResponse;
             }
         }
     }
