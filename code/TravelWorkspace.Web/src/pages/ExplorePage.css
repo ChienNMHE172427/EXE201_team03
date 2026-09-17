@@ -1,0 +1,153 @@
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.search-input {
+  width: 300px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-teal);
+}
+
+.category-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.cat-tab {
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: var(--color-white);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  transition: all 0.2s;
+}
+
+.cat-tab:hover {
+  background: var(--color-bg-light);
+}
+
+.cat-tab.active {
+  background: var(--color-primary-dark);
+  color: var(--color-white);
+  border-color: var(--color-primary-dark);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.explore-card {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.explore-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.card-image {
+  height: 200px;
+  background: var(--color-border);
+  position: relative;
+  background-size: cover;
+  background-position: center;
+}
+
+.card-image.i1 { background-image: linear-gradient(45deg, #1E6B65, #D2F47D); }
+.card-image.i2 { background-image: linear-gradient(45deg, #8CABA9, #122B29); }
+.card-image.i3 { background-image: linear-gradient(45deg, #F8D8B0, #E07A5F); }
+
+.badge-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--color-accent);
+  color: var(--color-primary-dark);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-content {
+  padding: 24px;
+}
+
+.card-type {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.rating {
+  color: #E07A5F;
+  font-weight: 700;
+}
+
+.reviews {
+  color: var(--color-text-muted);
+}
+
+.price {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--color-teal);
+}
+
+.card-desc {
+  font-size: 14px;
+  color: var(--color-text-main);
+  line-height: 1.5;
+  margin-bottom: 24px;
+  height: 42px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mt-8 {
+  margin-top: 32px;
+}

@@ -1,0 +1,19 @@
+@startuml Admin_UseCase
+left to right direction
+actor "Quản trị viên (Admin)" as admin
+
+package "Travel Workspace Admin Panel" {
+  usecase "Đăng nhập Hệ thống" as UC_Login
+  usecase "Quản lý Người dùng" as UC_ManageUsers
+  usecase "Quản lý Đối tác Affiliate" as UC_ManagePartners
+  usecase "Quản lý Nội dung & Báo cáo vi phạm" as UC_ManageContent
+  usecase "Xem Báo cáo Thống kê & Doanh thu" as UC_Dashboard
+}
+
+admin --> UC_Login
+admin --> UC_ManageUsers
+admin --> UC_ManagePartners
+admin --> UC_ManageContent
+admin --> UC_Dashboard
+
+@enduml

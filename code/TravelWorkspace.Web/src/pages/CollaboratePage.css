@@ -1,0 +1,236 @@
+.collab-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+}
+
+.collab-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr;
+  gap: 24px;
+  flex: 1;
+  min-height: 0; /* important for nested scrolling */
+}
+
+.collab-chat-section, .collab-todo-section {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.section-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+/* Chat styles */
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fafafa;
+}
+
+.chat-message {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.message-other {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.message-sender {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+  margin-left: 4px;
+}
+
+.message-bubble {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.message-mine .message-bubble {
+  background: #3b82f6;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message-other .message-bubble {
+  background: #e2e8f0;
+  color: #1e293b;
+  border-bottom-left-radius: 4px;
+}
+
+.message-time {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.chat-input-area {
+  padding: 16px;
+  background: #fff;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  gap: 12px;
+}
+
+.chat-input-area input, .todo-input-area input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  outline: none;
+  font-size: 14px;
+}
+
+.chat-input-area input:focus, .todo-input-area input:focus {
+  border-color: #3b82f6;
+}
+
+/* Todo styles */
+.todo-input-area {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  gap: 12px;
+}
+
+.todo-list {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.todo-item:hover {
+  background: #f1f5f9;
+}
+
+.todo-item.completed .todo-title {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.todo-content {
+  flex: 1;
+  font-size: 14px;
+  color: #334155;
+}
+
+.todo-delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.todo-item:hover .todo-delete-btn {
+  opacity: 1;
+}
+
+.empty-state {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  margin-top: 40px;
+}
+
+/* Checkbox styling */
+.todo-checkbox-container {
+  display: block;
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 24px;
+  cursor: pointer;
+  font-size: 22px;
+  user-select: none;
+}
+
+.todo-checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #fff;
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.todo-checkbox-container:hover input ~ .checkmark {
+  border-color: #3b82f6;
+}
+
+.todo-checkbox-container input:checked ~ .checkmark {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.todo-checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.todo-checkbox-container .checkmark:after {
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}

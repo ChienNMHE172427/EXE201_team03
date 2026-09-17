@@ -1,0 +1,160 @@
+.admin-page {
+  padding: 30px;
+  background-color: #f4f6f9;
+  min-height: 100vh;
+  color: #333;
+}
+
+.admin-page h2 {
+  margin-bottom: 24px;
+  color: #1a1a2e;
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stat-card h3 {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.stat-trend {
+  font-size: 13px;
+  color: #888;
+}
+
+.stat-trend.positive {
+  color: #2e7d32;
+}
+
+.admin-recent-activity {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-right: 16px;
+}
+
+.activity-icon.bg-blue { background: #e3f2fd; }
+.activity-icon.bg-green { background: #e8f5e9; }
+.activity-icon.bg-yellow { background: #fff3e0; }
+
+.activity-details {
+  flex: 1;
+}
+
+.activity-title {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Table styles */
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th, .admin-table td {
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.admin-table th {
+  background-color: #fafafa;
+  font-weight: 600;
+  color: #555;
+}
+
+.admin-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.role-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-badge.admin {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.role-badge.traveler {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.btn-action {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.btn-action.edit {
+  color: #1565c0;
+  background: #e3f2fd;
+}
+
+.btn-action.delete {
+  color: #c62828;
+  background: #ffebee;
+}

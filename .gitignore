@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.log
+*.sqlite3
+appsettings.Development.json

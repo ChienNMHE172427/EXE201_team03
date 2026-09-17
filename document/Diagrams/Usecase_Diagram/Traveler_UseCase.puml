@@ -1,0 +1,25 @@
+@startuml Traveler_UseCase
+left to right direction
+actor "Khách du lịch (Traveler)" as user
+
+package "Travel Workspace" {
+  usecase "Đăng ký / Đăng nhập" as UC_Auth
+  usecase "Quản lý Không gian Chuyến đi" as UC_Workspace
+  usecase "Tạo Lịch trình bằng AI" as UC_AI_Trip
+  usecase "Lập Kế hoạch Cộng tác (Mời qua Gmail)" as UC_Collab
+  usecase "Tham khảo & Đặt chỗ qua bên thứ 3" as UC_Booking
+  usecase "Theo dõi Ngân sách và Chi phí" as UC_Budget
+  usecase "Lưu trữ Tài liệu" as UC_Docs
+  usecase "Khám phá Ẩm thực & Điểm tham quan" as UC_Discover
+}
+
+user --> UC_Auth
+user --> UC_Workspace
+user --> UC_AI_Trip
+user --> UC_Collab
+user --> UC_Booking
+user --> UC_Budget
+user --> UC_Docs
+user --> UC_Discover
+
+@enduml
