@@ -18,6 +18,7 @@ namespace TravelWorkspace.API.Services
         {
             var trips = await _context.Trips
                 .Where(t => t.OwnerId == userId)
+                .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
             return trips.Select(MapToDto);

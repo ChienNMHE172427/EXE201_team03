@@ -63,7 +63,8 @@ namespace TravelWorkspace.API.Services
                 Token = GenerateJwtToken(user),
                 Email = user.Email,
                 FullName = user.FullName,
-                Role = user.Role
+                Role = user.Role,
+                AvatarUrl = user.AvatarUrl
             };
         }
 
@@ -81,7 +82,8 @@ namespace TravelWorkspace.API.Services
                 Token = GenerateJwtToken(user),
                 Email = user.Email,
                 FullName = user.FullName,
-                Role = user.Role
+                Role = user.Role,
+                AvatarUrl = user.AvatarUrl
             };
         }
 
@@ -109,7 +111,8 @@ namespace TravelWorkspace.API.Services
                     Token = GenerateJwtToken(user),
                     Email = user.Email,
                     FullName = user.FullName,
-                    Role = user.Role
+                    Role = user.Role,
+                    AvatarUrl = user.AvatarUrl
                 };
             }
             catch

@@ -14,7 +14,7 @@ const LoginPage = () => {
     try {
       const res = await api.post('/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify({ email: res.data.email, name: res.data.fullName, role: res.data.role }));
+      localStorage.setItem('user', JSON.stringify({ email: res.data.email, name: res.data.fullName, role: res.data.role, avatarUrl: res.data.avatarUrl }));
       
       if (res.data.role === 'Admin') {
         navigate('/admin/dashboard');

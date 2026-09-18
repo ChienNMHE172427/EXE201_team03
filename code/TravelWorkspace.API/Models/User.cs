@@ -7,6 +7,7 @@ namespace TravelWorkspace.API.Models
         public string PasswordHash { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string Role { get; set; } = "Traveler"; // "Traveler" or "Admin"
+        public string AvatarUrl { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

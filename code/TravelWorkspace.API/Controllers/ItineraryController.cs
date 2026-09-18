@@ -169,8 +169,10 @@ namespace TravelWorkspace.API.Controllers
             var oldItems = await _context.ItineraryItems.Where(i => i.TripId == tripId).ToListAsync();
             _context.ItineraryItems.RemoveRange(oldItems);
 
+            var userApiKey = Request.Headers["X-Gemini-API-Key"].FirstOrDefault();
+
             int days = Math.Max(1, (int)(trip.EndDate - trip.StartDate).TotalDays);
-            var aiItems = await _geminiService.GenerateItineraryJsonAsync(trip.Origin, trip.Destination, days, trip.StartDate);
+            var aiItems = await _geminiService.GenerateItineraryJsonAsync(trip.Origin, trip.Destination, days, trip.StartDate, userApiKey);
 
             var newItems = new List<ItineraryItem>();
             foreach (var ai in aiItems)
@@ -225,7 +227,8 @@ namespace TravelWorkspace.API.Controllers
 
             var currentItems = await _context.ItineraryItems.Where(i => i.TripId == tripId).OrderBy(i => i.StartTime).ToListAsync();
 
-            var aiResponse = await _geminiService.ChatAndModifyItineraryAsync(request.Message, currentItems);
+            var userApiKey = Request.Headers["X-Gemini-API-Key"].FirstOrDefault();
+            var aiResponse = await _geminiService.ChatAndModifyItineraryAsync(request.Message, currentItems, trip, userApiKey);
 
             if (aiResponse.Items != null && aiResponse.Items.Any())
             {

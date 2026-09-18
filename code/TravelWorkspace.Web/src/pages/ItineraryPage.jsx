@@ -6,7 +6,7 @@ import './ItineraryPage.css';
 const ItineraryPage = () => {
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
-  const [selectedTripId, setSelectedTripId] = useState(null);
+  const [selectedTripId, setSelectedTripId] = useState(localStorage.getItem('currentTripId') ? parseInt(localStorage.getItem('currentTripId')) : null);
   const [trip, setTrip] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +22,7 @@ const ItineraryPage = () => {
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
+  const [isGeminiConnected, setIsGeminiConnected] = useState(localStorage.getItem('geminiConnected') === 'true');
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -52,8 +53,20 @@ const ItineraryPage = () => {
   useEffect(() => {
     if (selectedTripId) {
       fetchTripData(selectedTripId);
+      const savedMessages = localStorage.getItem(`chat_${selectedTripId}`);
+      if (savedMessages) {
+        setMessages(JSON.parse(savedMessages));
+      } else {
+        setMessages([{ role: 'ai', content: 'Chào bạn! Mình là trợ lý AI. Mình có thể giúp bạn tạo mới hoặc chỉnh sửa lịch trình theo ý muốn. Bạn muốn thay đổi gì nào?' }]);
+      }
     }
   }, [selectedTripId]);
+
+  useEffect(() => {
+    if (selectedTripId) {
+      localStorage.setItem(`chat_${selectedTripId}`, JSON.stringify(messages));
+    }
+  }, [messages, selectedTripId]);
 
   const handleAddItem = async (e) => {
     e.preventDefault();
@@ -135,11 +148,26 @@ const ItineraryPage = () => {
 
   const handleSelectTrip = (t) => {
     setSelectedTripId(t.id);
+    localStorage.setItem('currentTripId', t.id);
+  };
+
+  const handleLoginGemini = () => {
+    // Giả lập đăng nhập thành công
+    localStorage.setItem('geminiConnected', 'true');
+    setIsGeminiConnected(true);
+    setMessages([{ role: 'ai', content: 'Đăng nhập thành công! Mình là Gemini, mình đã sẵn sàng giúp bạn lên lịch trình.' }]);
+  };
+
+  const handleLogoutGemini = () => {
+    localStorage.removeItem('geminiConnected');
+    setIsGeminiConnected(false);
+    setMessages([{ role: 'ai', content: 'Chào bạn! Mình là trợ lý AI. Mình có thể giúp bạn tạo mới hoặc chỉnh sửa lịch trình theo ý muốn. Bạn muốn thay đổi gì nào?' }]);
   };
 
   const handleBack = () => {
     setSelectedTripId(null);
     setTrip(null);
+    localStorage.removeItem('currentTripId');
   };
 
   if (loading) return <div className="page-container"><h2 style={{marginTop: 40}}>Đang tải...</h2></div>;
@@ -164,8 +192,8 @@ const ItineraryPage = () => {
                 <div style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text)' }}>{t.title}</h3>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: '1.5' }}>
-                    👥 Nhóm: {t.numberOfParticipants || 1} người <br/>
-                    📍 Điểm đến: {t.destination}
+                    <span style={{display: 'flex', alignItems: 'center'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Nhóm: {t.numberOfParticipants || 1} người</span>
+                    <span style={{display: 'flex', alignItems: 'center', marginTop: 4}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {t.destination}</span>
                   </p>
                   <div style={{ marginTop: '16px', fontWeight: '600', color: '#ff7b89', fontSize: '14px' }}>
                     + Mở lịch trình chi tiết
@@ -190,22 +218,46 @@ const ItineraryPage = () => {
   return (
     <div className="page-container">
       <div style={{ marginBottom: '24px' }}>
-        <button onClick={handleBack} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
-          ← Quay lại danh sách Lịch trình
+        <button onClick={handleBack} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary-dark)', cursor: 'pointer', fontWeight: '700', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          {trip.title}
         </button>
       </div>
 
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Lịch trình: {trip.title}</h1>
-          <p className="page-subtitle">Điểm đến: {trip.destination}</p>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn-primary" onClick={() => setShowAddForm(true)}>
-            + Thêm Hoạt động
-          </button>
+      {/* Removed page-header to save space */}
+
+      <div className="wizard-steps-container">
+        <div className="wizard-steps">
+          <div className="step active">
+            <div className="step-circle">1</div>
+            <div className="step-info">
+              <div className="step-title">Lịch trình</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/explore?tripId=${selectedTripId}`)}>
+            <div className="step-circle">2</div>
+            <div className="step-info">
+              <div className="step-title">Khám phá & Dịch vụ</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTripId}`)}>
+            <div className="step-circle">3</div>
+            <div className="step-info">
+              <div className="step-title">Chi phí nhóm</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/collaborate?tripId=${selectedTripId}`)}>
+            <div className="step-circle">4</div>
+            <div className="step-info">
+              <div className="step-title">Cộng tác nhóm</div>
+            </div>
+          </div>
         </div>
       </div>
+
 
       {showAddForm && (
         <div className="modal-overlay">
@@ -246,110 +298,156 @@ const ItineraryPage = () => {
       <div className="split-layout">
         {/* Left pane: AI Chat */}
         <div className="chat-container">
-          <div className="chat-header">
-            ✨ Trợ lý Lịch trình AI
+          <div className="chat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              {isGeminiConnected ? 'Gemini AI' : 'Trợ lý Lịch trình AI'}
+            </span>
+            {isGeminiConnected ? (
+              <button 
+                onClick={handleLogoutGemini}
+                title="Đăng xuất"
+                style={{ background: 'none', border: 'none', color: '#ff4d4f', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              </button>
+            ) : null}
           </div>
-          <div className="chat-messages">
-            {messages.map((m, idx) => (
-              <div key={idx} className={`chat-bubble ${m.role}`}>
-                {m.content}
-              </div>
-            ))}
-            {isChatting && (
-              <div className="chat-bubble ai">
-                Đang suy nghĩ...
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-              <button className="btn-explore-sm" onClick={handleGenerateAi} disabled={isChatting}>
-                🔄 Tạo mới toàn bộ lịch trình
+          
+          {!isGeminiConnected ? (
+            <div style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
+              <h3 style={{ marginBottom: 12 }}>Kết nối với Gemini</h3>
+              <p style={{ color: '#666', fontSize: 14, marginBottom: 24 }}>Đăng nhập để sử dụng sức mạnh của Google Gemini cho chuyến đi của bạn.</p>
+              <button className="btn-primary" onClick={handleLoginGemini}>
+                Đăng nhập với Google
               </button>
             </div>
-          </div>
-          <div className="chat-input-area">
-            <input 
-              type="text" 
-              className="chat-input" 
-              placeholder="Ví dụ: Đổi lịch chiều ngày 2 thành đi ăn ốc..." 
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={isChatting}
-            />
-            <button className="btn-send" onClick={handleSendMessage} disabled={isChatting || !chatInput.trim()}>Gửi</button>
-          </div>
+          ) : (
+            <>
+              <div className="chat-messages">
+                {messages.map((m, idx) => (
+                  <div key={idx} className={`chat-bubble ${m.role}`}>
+                    {m.content}
+                  </div>
+                ))}
+                {isChatting && (
+                  <div className="chat-bubble ai">
+                    Đang suy nghĩ...
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                  <button className="btn-explore-sm" onClick={handleGenerateAi} disabled={isChatting}>
+                    🔄 Tạo mới toàn bộ lịch trình
+                  </button>
+                </div>
+              </div>
+              <div className="chat-input-area">
+                <input 
+                  type="text" 
+                  className="chat-input" 
+                  placeholder="Ví dụ: Đổi lịch chiều ngày 2 thành đi ăn ốc..." 
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={isChatting}
+                />
+                <button className="btn-send" onClick={handleSendMessage} disabled={isChatting || !chatInput.trim()}>Gửi</button>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Right pane: Itinerary Table */}
-        <div className="itinerary-table-container">
+        {/* Right pane: Timeline Layout */}
+        <div className="timeline-container">
           {items.length === 0 ? (
-            <div style={{textAlign: 'center', padding: 40, background: '#fff', borderRadius: 16}}>
-              <h3>Lịch trình trống</h3>
-              <p style={{color: '#666', marginTop: 12}}>Bấm "Thêm Hoạt động" hoặc dùng AI để bắt đầu lên kế hoạch cho chuyến đi của bạn.</p>
+            <div style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <button className="btn-primary" onClick={() => setShowAddForm(true)}>+ Thêm Hoạt động</button>
+              </div>
+              <div style={{textAlign: 'center', padding: 60, background: 'transparent', border: '2px dashed #E5ECEB', borderRadius: 24}}>
+                <div style={{fontSize: 48, marginBottom: 16}}>🗺️</div>
+                <h3 style={{fontSize: 20, color: '#122B29', marginBottom: 8}}>Chưa có hoạt động nào</h3>
+                <p style={{color: '#6E807F', marginBottom: 24}}>Bấm "Thêm Hoạt động" hoặc dùng Trợ lý AI để bắt đầu lên kế hoạch cho chuyến đi của bạn.</p>
+              </div>
             </div>
           ) : (
-            <table className="itinerary-table">
-              <thead>
-                <tr>
-                  <th>Ngày</th>
-                  <th>Thời gian</th>
-                  <th>Phương tiện</th>
-                  <th>Từ - Đến (Mô tả)</th>
-                  <th>Người phụ trách</th>
-                  <th>Trạng thái</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(groupedItems).map(([date, dayItems], groupIndex) => (
-                  <React.Fragment key={date}>
-                    {dayItems.map((item, index) => {
-                      const statusClass = item.status === 'Đã hoàn thành' ? 'status-da-hoan-thanh' : item.status === 'Đã chuẩn bị' ? 'status-da-chuan-bi' : 'status-chua-bat-dau';
-                      return (
-                        <tr key={item.id}>
-                          {index === 0 && (
-                            <td rowSpan={dayItems.length} className="date-cell">
-                              {date}
-                            </td>
-                          )}
-                          <td>
-                            {new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} 
-                            {item.endTime && item.endTime !== item.startTime ? ` - ${new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}` : ''}
-                          </td>
-                          <td>{item.transport || '-'}</td>
-                          <td>
-                            <strong>{item.title}</strong>
-                            {item.location && <div style={{ fontSize: 12, color: '#666' }}>📍 {item.location}</div>}
-                          </td>
-                          <td>{item.assignee || 'Trống'}</td>
-                          <td>
-                            <select 
-                              value={item.status || 'Chưa bắt đầu'} 
-                              onChange={(e) => updateItemStatus(item, e.target.value)}
-                              className={`status-badge ${statusClass}`}
-                              style={{ border: 'none', outline: 'none', cursor: 'pointer' }}
-                            >
-                              <option value="Chưa bắt đầu" className="status-chua-bat-dau">Chưa bắt đầu</option>
-                              <option value="Đã chuẩn bị" className="status-da-chuan-bi">Đã chuẩn bị</option>
-                              <option value="Đã hoàn thành" className="status-da-hoan-thanh">Đã hoàn thành</option>
-                            </select>
-                          </td>
-                          <td>
-                            <div className="action-buttons" style={{ flexDirection: 'column' }}>
-                              <div style={{ display: 'flex', gap: 4 }}>
-                                <button className="btn-explore-sm" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Di chuyển`)}>Tìm Xe</button>
-                                <button className="btn-explore-sm" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Lưu trú`)}>Tìm KS</button>
-                              </div>
-                              <button className="btn-danger-sm" style={{ padding: '4px 8px', width: '100%' }} onClick={() => handleDelete(item.id)}>Xóa</button>
+            Object.entries(groupedItems).map(([date, dayItems], groupIndex) => {
+              const totalDays = Object.keys(groupedItems).length;
+              let dayTitle = `Khám phá ${trip.destination}`;
+              if (groupIndex === 0) {
+                dayTitle = `Từ ${trip.origin} đi ${trip.destination}`;
+              } else if (groupIndex === totalDays - 1) {
+                dayTitle = `Từ ${trip.destination} về ${trip.origin}`;
+              }
+
+              return (
+                <div key={date} className="timeline-date-group">
+                  <div className="timeline-date-header">
+                    <div>
+                      <h3 className="timeline-date-title">{dayTitle}</h3>
+                      <div style={{ fontSize: '14px', color: '#6E807F', marginTop: '6px', fontWeight: '600', display: 'flex', alignItems: 'center' }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                        Ngày: {date}
+                      </div>
+                    </div>
+                    {groupIndex === 0 && (
+                      <button className="btn-add-activity" onClick={() => setShowAddForm(true)}>
+                        + Thêm Hoạt động
+                      </button>
+                    )}
+                  </div>
+                
+                <div className="timeline-list">
+                  {dayItems.map((item, index) => {
+                    return (
+                      <div key={item.id} className="timeline-item">
+                        <div className="timeline-dot"></div>
+                        <div className="itinerary-card">
+                          <div className="itinerary-card-header">
+                            <div className="itinerary-time">
+                              {new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} 
+                              {item.endTime && item.endTime !== item.startTime ? ` - ${new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}` : ''}
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
+                            <button className="btn-delete-icon" onClick={() => handleDelete(item.id)} title="Xóa">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                          </div>
+
+                          <div className="itinerary-card-body">
+                            <h4 className="itinerary-card-title">{item.title}</h4>
+                          </div>
+
+                          <div className="itinerary-card-footer">
+                            <div className="itinerary-services">
+                              {item.location && (
+                                <button className="service-btn map-btn" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`, '_blank')}>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                  Bản đồ
+                                </button>
+                              )}
+                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Di chuyển`)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v9c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>
+                                Di chuyển
+                              </button>
+                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Lưu trú`)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+                                Lưu trú
+                              </button>
+                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Ăn uống`)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>
+                                Ăn uống
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+            })
           )}
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import './ExplorePage.css';
 
@@ -25,6 +25,7 @@ const ExplorePage = () => {
   const [activeCategory, setActiveCategory] = useState("Tất cả");
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -105,8 +106,8 @@ const ExplorePage = () => {
                   <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--color-primary)', textTransform: 'uppercase', marginBottom: '8px' }}>Lịch trình</div>
                   <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text)' }}>{t.title}</h3>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: '1.5' }}>
-                    📍 Điểm đến: {t.destination} <br/>
-                    📅 Khởi hành: {new Date(t.startDate).toLocaleDateString('vi-VN')}
+                    <span style={{display: 'flex', alignItems: 'center'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {t.destination}</span>
+                    <span style={{display: 'flex', alignItems: 'center', marginTop: 4}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg> Khởi hành: {new Date(t.startDate).toLocaleDateString('vi-VN')}</span>
                   </p>
                   <div style={{ marginTop: '16px', fontWeight: '600', color: 'var(--color-primary)', fontSize: '14px' }}>
                     + Mở tìm kiếm dịch vụ
@@ -137,9 +138,42 @@ const ExplorePage = () => {
   return (
     <div className="page-container">
       <div style={{ marginBottom: '24px' }}>
-        <button onClick={handleBack} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
-          ← Quay lại danh sách Lịch trình
+        <button onClick={handleBack} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary-dark)', cursor: 'pointer', fontWeight: '700', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          {selectedTrip.title}
         </button>
+      </div>
+
+      <div className="wizard-steps-container">
+        <div className="wizard-steps">
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/itinerary?tripId=${selectedTrip.id}`)}>
+            <div className="step-circle">1</div>
+            <div className="step-info">
+              <div className="step-title">Lịch trình</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step active">
+            <div className="step-circle">2</div>
+            <div className="step-info">
+              <div className="step-title">Khám phá & Dịch vụ</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTrip.id}`)}>
+            <div className="step-circle">3</div>
+            <div className="step-info">
+              <div className="step-title">Chi phí nhóm</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/collaborate?tripId=${selectedTrip.id}`)}>
+            <div className="step-circle">4</div>
+            <div className="step-info">
+              <div className="step-title">Cộng tác nhóm</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="page-header">

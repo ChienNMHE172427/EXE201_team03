@@ -116,31 +116,6 @@ const CreateTripPage = () => {
         </div>
       </div>
 
-      <div className="wizard-steps">
-        <div className="step active">
-          <div className="step-circle">1</div>
-          <div className="step-info">
-            <div className="step-title">Thông tin chuyến đi</div>
-            <div className="step-desc">Điểm đến và thời gian</div>
-          </div>
-        </div>
-        <div className="step-line"></div>
-        <div className="step">
-          <div className="step-circle">2</div>
-          <div className="step-info">
-            <div className="step-title">Cách trải nghiệm</div>
-            <div className="step-desc">Sở thích và ngân sách</div>
-          </div>
-        </div>
-        <div className="step-line"></div>
-        <div className="step">
-          <div className="step-circle">3</div>
-          <div className="step-info">
-            <div className="step-title">Mời bạn bè</div>
-            <div className="step-desc">Hoàn thiện nhóm đi</div>
-          </div>
-        </div>
-      </div>
 
       <div className="create-grid">
         <div className="form-section">

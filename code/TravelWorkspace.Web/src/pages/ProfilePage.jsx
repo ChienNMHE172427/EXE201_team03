@@ -7,7 +7,8 @@ const ProfilePage = () => {
     fullName: '',
     email: '',
     role: '',
-    createdAt: ''
+    createdAt: '',
+    avatarUrl: ''
   });
   
   const [passwords, setPasswords] = useState({
@@ -42,6 +43,21 @@ const ProfilePage = () => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Vui lòng chọn ảnh nhỏ hơn 2MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfile({ ...profile, avatarUrl: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handlePasswordChange = (e) => {
     setPasswords({ ...passwords, [e.target.name]: e.target.value });
   };
@@ -51,11 +67,18 @@ const ProfilePage = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put('http://localhost:5299/api/User/profile', 
-        { fullName: profile.fullName },
+        { fullName: profile.fullName, avatarUrl: profile.avatarUrl },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setProfileMsg({ type: 'success', text: 'Cập nhật thông tin thành công!' });
       
+      // Update local storage and dispatch event so Sidebar updates
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      storedUser.name = profile.fullName;
+      storedUser.avatarUrl = profile.avatarUrl;
+      localStorage.setItem('user', JSON.stringify(storedUser));
+      window.dispatchEvent(new Event('profileUpdated'));
+
       // Clear message after 3 seconds
       setTimeout(() => setProfileMsg({ type: '', text: '' }), 3000);
     } catch (error) {
@@ -110,6 +133,32 @@ const ProfilePage = () => {
         )}
         
         <form onSubmit={updateProfile}>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
+            {profile.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="Avatar" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#005f56', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
+                {profile.fullName ? profile.fullName.substring(0, 2).toUpperCase() : 'ME'}
+              </div>
+            )}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label>Ảnh đại diện</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={handleFileChange} 
+                style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '-4px' }}>Hoặc dùng link ảnh:</div>
+              <input 
+                type="text" 
+                name="avatarUrl" 
+                value={profile.avatarUrl} 
+                onChange={handleProfileChange} 
+                placeholder="Nhập đường dẫn hình ảnh (URL)..."
+              />
+            </div>
+          </div>
           <div className="form-group">
             <label>Email (Không thể thay đổi)</label>
             <input type="email" value={profile.email} disabled />

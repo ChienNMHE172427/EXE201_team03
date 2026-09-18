@@ -33,6 +33,7 @@ namespace TravelWorkspace.API.Controllers
                 user.Email,
                 user.FullName,
                 user.Role,
+                user.AvatarUrl,
                 user.CreatedAt
             });
         }
@@ -45,6 +46,10 @@ namespace TravelWorkspace.API.Controllers
             if (user == null) return NotFound();
 
             user.FullName = request.FullName;
+            if (request.AvatarUrl != null) 
+            {
+                user.AvatarUrl = request.AvatarUrl;
+            }
             await _context.SaveChangesAsync();
 
             return Ok(new
@@ -53,6 +58,7 @@ namespace TravelWorkspace.API.Controllers
                 user.Email,
                 user.FullName,
                 user.Role,
+                user.AvatarUrl,
                 user.CreatedAt
             });
         }
