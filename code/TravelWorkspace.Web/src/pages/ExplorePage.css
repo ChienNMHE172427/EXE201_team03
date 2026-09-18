@@ -148,6 +148,16 @@
   overflow: hidden;
 }
 
+.btn-outline {
+  transition: all 0.2s;
+}
+
+.btn-outline:hover {
+  background-color: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
 .mt-8 {
   margin-top: 32px;
 }

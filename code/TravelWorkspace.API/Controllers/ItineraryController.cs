@@ -47,6 +47,7 @@ namespace TravelWorkspace.API.Controllers
                     TripId = i.TripId,
                     Title = i.Title,
                     Location = i.Location,
+                    Destination = i.Destination,
                     Notes = i.Notes,
                     StartTime = i.StartTime,
                     EndTime = i.EndTime,
@@ -74,6 +75,7 @@ namespace TravelWorkspace.API.Controllers
                 TripId = tripId,
                 Title = request.Title,
                 Location = request.Location,
+                Destination = request.Destination,
                 Notes = request.Notes,
                 StartTime = request.StartTime,
                 EndTime = request.EndTime,
@@ -91,6 +93,7 @@ namespace TravelWorkspace.API.Controllers
                 TripId = item.TripId,
                 Title = item.Title,
                 Location = item.Location,
+                Destination = item.Destination,
                 Notes = item.Notes,
                 StartTime = item.StartTime,
                 EndTime = item.EndTime,
@@ -115,6 +118,7 @@ namespace TravelWorkspace.API.Controllers
 
             item.Title = request.Title;
             item.Location = request.Location;
+            item.Destination = request.Destination;
             item.Notes = request.Notes;
             item.StartTime = request.StartTime;
             item.EndTime = request.EndTime;
@@ -130,6 +134,7 @@ namespace TravelWorkspace.API.Controllers
                 TripId = item.TripId,
                 Title = item.Title,
                 Location = item.Location,
+                Destination = item.Destination,
                 Notes = item.Notes,
                 StartTime = item.StartTime,
                 EndTime = item.EndTime,
@@ -182,6 +187,7 @@ namespace TravelWorkspace.API.Controllers
                     TripId = tripId,
                     Title = ai.Title,
                     Location = ai.Location,
+                    Destination = ai.Destination,
                     Notes = ai.Notes,
                     StartTime = ai.StartTime,
                     EndTime = ai.EndTime,
@@ -200,6 +206,7 @@ namespace TravelWorkspace.API.Controllers
                 TripId = i.TripId,
                 Title = i.Title,
                 Location = i.Location,
+                Destination = i.Destination,
                 Notes = i.Notes,
                 StartTime = i.StartTime,
                 EndTime = i.EndTime,
@@ -239,6 +246,7 @@ namespace TravelWorkspace.API.Controllers
                     TripId = tripId,
                     Title = ai.Title,
                     Location = ai.Location,
+                    Destination = ai.Destination,
                     Notes = ai.Notes,
                     StartTime = ai.StartTime,
                     EndTime = ai.EndTime,
@@ -256,6 +264,7 @@ namespace TravelWorkspace.API.Controllers
                     TripId = i.TripId,
                     Title = i.Title,
                     Location = i.Location,
+                    Destination = i.Destination,
                     Notes = i.Notes,
                     StartTime = i.StartTime,
                     EndTime = i.EndTime,

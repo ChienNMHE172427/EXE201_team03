@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import './CollaboratePage.css';
 
 const CollaboratePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [trips, setTrips] = useState([]);
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [trip, setTrip] = useState(null);
@@ -22,6 +23,12 @@ const CollaboratePage = () => {
       try {
         const res = await api.get('/Trip');
         setTrips(res.data);
+        
+        const params = new URLSearchParams(location.search);
+        const tripIdFromUrl = params.get('tripId');
+        if (tripIdFromUrl) {
+          setSelectedTripId(parseInt(tripIdFromUrl));
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -29,7 +36,7 @@ const CollaboratePage = () => {
       }
     };
     fetchTrips();
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     if (selectedTripId) {
@@ -206,6 +213,13 @@ const CollaboratePage = () => {
             <div className="step-circle">4</div>
             <div className="step-info">
               <div className="step-title">Cộng tác nhóm</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/documents?tripId=${selectedTripId}`)}>
+            <div className="step-circle">5</div>
+            <div className="step-info">
+              <div className="step-title">Trạng thái</div>
             </div>
           </div>
         </div>

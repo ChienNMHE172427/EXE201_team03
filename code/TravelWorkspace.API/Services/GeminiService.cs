@@ -88,20 +88,20 @@ namespace TravelWorkspace.API.Services
                 var currentDate = startDate.AddDays(d);
                 if (d == 0)
                 {
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Khởi hành từ {origin} đi {destination}", Location = origin, Transport = "Tùy chọn", StartTime = currentDate.AddHours(7), EndTime = currentDate.AddHours(9), Status = "Chưa bắt đầu" });
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Đến {destination}, nhận phòng & nghỉ ngơi", Location = "Khách sạn trung tâm", Transport = "Taxi", StartTime = currentDate.AddHours(12), EndTime = currentDate.AddHours(14), Status = "Chưa bắt đầu" });
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Ăn tối đặc sản địa phương", Location = "Nhà hàng trung tâm", Transport = "Đi bộ", StartTime = currentDate.AddHours(18).AddMinutes(30), EndTime = currentDate.AddHours(20), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Khởi hành từ {origin} đi {destination}", Location = origin, Destination = destination, Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(7), EndTime = currentDate.AddHours(9), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Đến {destination}, nhận phòng & nghỉ ngơi", Location = destination, Destination = "Vui lòng chọn dịch vụ", Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(12), EndTime = currentDate.AddHours(14), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Ăn tối đặc sản địa phương", Location = destination, Destination = "Vui lòng chọn dịch vụ", Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(18).AddMinutes(30), EndTime = currentDate.AddHours(20), Status = "Chưa bắt đầu" });
                 }
                 else if (d == days - 1)
                 {
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Mua sắm đặc sản {destination} làm quà", Location = "Chợ địa phương", Transport = "Taxi/Xe máy", StartTime = currentDate.AddHours(9), EndTime = currentDate.AddHours(11), Status = "Chưa bắt đầu" });
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Khởi hành từ {destination} về {origin}", Location = destination, Transport = "Tùy chọn", StartTime = currentDate.AddHours(14), EndTime = currentDate.AddHours(16), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Mua sắm đặc sản {destination} làm quà", Location = destination, Destination = "Chợ địa phương", Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(9), EndTime = currentDate.AddHours(11), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Khởi hành từ {destination} về {origin}", Location = destination, Destination = origin, Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(14), EndTime = currentDate.AddHours(16), Status = "Chưa bắt đầu" });
                 }
                 else
                 {
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Vui chơi, tham quan các điểm nổi tiếng tại {destination}", Location = "Khu du lịch sinh thái", Transport = "Xe máy/Taxi", StartTime = currentDate.AddHours(8), EndTime = currentDate.AddHours(11), Status = "Chưa bắt đầu" });
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Ăn trưa, nghỉ ngơi", Location = "Nhà hàng địa phương", Transport = "Đi bộ", StartTime = currentDate.AddHours(12), EndTime = currentDate.AddHours(13), Status = "Chưa bắt đầu" });
-                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Khám phá văn hóa & ẩm thực đường phố", Location = "Khu phố trung tâm", Transport = "Đi bộ", StartTime = currentDate.AddHours(15), EndTime = currentDate.AddHours(18), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = $"Vui chơi, tham quan các điểm nổi tiếng tại {destination}", Location = destination, Destination = "Vui lòng chọn dịch vụ", Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(8), EndTime = currentDate.AddHours(11), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Ăn trưa, nghỉ ngơi", Location = destination, Destination = "Vui lòng chọn dịch vụ", Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(12), EndTime = currentDate.AddHours(13), Status = "Chưa bắt đầu" });
+                    mockData.Add(new TravelWorkspace.API.Models.DTOs.CreateItineraryItemDto { Title = "Khám phá văn hóa & ẩm thực đường phố", Location = destination, Destination = "Vui lòng chọn dịch vụ", Transport = "Vui lòng chọn dịch vụ", StartTime = currentDate.AddHours(15), EndTime = currentDate.AddHours(18), Status = "Chưa bắt đầu" });
                 }
             }
 
@@ -111,7 +111,7 @@ namespace TravelWorkspace.API.Services
                 return mockData;
             }
 
-            var prompt = $"Create a detailed {days}-day travel itinerary departing from {origin} and traveling to {destination} starting from {startDate:yyyy-MM-dd}. Return ONLY a raw JSON array of objects. Each object must have exactly these keys: 'title' (string, e.g. 'Từ {origin} đi {destination}', representing origin to destination or activity), 'location' (string), 'startTime' (ISO 8601 string), 'endTime' (ISO 8601 string), 'transport' (string like 'Taxi', 'Máy bay', 'Xe máy', 'Đi bộ', but BE REALISTIC based on the distance between {origin} and {destination}!), 'notes' (string, can be empty). Provide roughly 3-5 activities per day.";
+            var prompt = $"Create a detailed {days}-day travel itinerary departing from {origin} and traveling to {destination} starting from {startDate:yyyy-MM-dd}. Return ONLY a raw JSON array of objects. Each object must have exactly these keys: 'title' (string, e.g. 'Từ {origin} đi {destination}', representing origin to destination or activity), 'location' (string, the origin or general geographic location, ALWAYS use the actual city or destination name like '{destination}' or '{origin}'), 'destination' (string, the specific destination or place. If it's a hotel, restaurant, or activity that needs to be booked, ALWAYS set this exactly to 'Vui lòng chọn dịch vụ'. Otherwise set it to the destination city), 'startTime' (ISO 8601 string), 'endTime' (ISO 8601 string), 'transport' (string, ALWAYS set this exactly to 'Vui lòng chọn dịch vụ' so the user can choose their own service later), 'notes' (string, can be empty). Provide roughly 3-5 activities per day.\nIMPORTANT GUIDELINE: When generating activities, you MUST prioritize suggesting the following test locations if they match the destination: Vịnh Hạ Long, Yên Tử, Đảo Cô Tô, Bình Liêu, Đảo Quan Lạn, Đỉnh Fansipan, Bản Cát Cát, Đèo Ô Quy Hồ, Thung lũng Mường Hoa, Dinh Hoàng A Tưởng (Bắc Hà), Quần thể Tràng An, Tam Cốc - Bích Động, Chùa Bái Đính, Cố đô Hoa Lư, Hang Múa.";
             
             var requestBody = new
             {
@@ -162,7 +162,16 @@ namespace TravelWorkspace.API.Services
                     foreach (var item in items)
                     {
                         item.Status = "Chưa bắt đầu";
+                        item.Transport = "Vui lòng chọn dịch vụ";
                         if (string.IsNullOrEmpty(item.Assignee)) item.Assignee = "";
+                        if (item.Location == "Vui lòng chọn dịch vụ" || item.Location.Contains("Khách sạn") || item.Location.Contains("Nhà hàng") || item.Location.Contains("Chợ"))
+                        {
+                            item.Location = destination;
+                        }
+                        if (string.IsNullOrEmpty(item.Destination))
+                        {
+                            item.Destination = "Vui lòng chọn dịch vụ";
+                        }
                     }
                     return items;
                 }

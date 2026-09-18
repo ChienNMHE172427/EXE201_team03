@@ -5,6 +5,8 @@ const CompanionsPage = () => {
   const [trips, setTrips] = useState([]);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -20,8 +22,17 @@ const CompanionsPage = () => {
     fetchTrips();
   }, []);
 
-  const handleSelectTrip = (trip) => {
+  const handleSelectTrip = async (trip) => {
     setSelectedTrip(trip);
+    setLoadingMembers(true);
+    try {
+      const res = await api.get(`/Trip/${trip.id}/members`);
+      setMembers(res.data);
+    } catch (err) {
+      console.error("Failed to load members", err);
+    } finally {
+      setLoadingMembers(false);
+    }
   };
 
   const handleBack = () => {
@@ -97,25 +108,26 @@ const CompanionsPage = () => {
       </div>
       
       <div className="timeline-section mt-8" style={{ background: '#fff', padding: '32px', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid #eee'}}>
-          <div className="avatar-circle c1" style={{width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', background: '#e0f2fe', color: '#0369a1', borderRadius: '50%', fontSize: '18px'}}>
-            MT
-          </div>
-          <div>
-            <h3 style={{fontSize: 16, fontWeight: '600', color: 'var(--color-text)', marginBottom: '4px'}}>Minh Triết (Bạn)</h3>
-            <span style={{ fontSize: 12, background: '#fee2e2', color: '#dc2626', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}>Quản trị viên (Host)</span>
-          </div>
-        </div>
-        
-        <div style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24}}>
-          <div className="avatar-circle c2" style={{width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', background: '#fce7f3', color: '#be185d', borderRadius: '50%', fontSize: '18px'}}>
-            LA
-          </div>
-          <div>
-            <h3 style={{fontSize: 16, fontWeight: '600', color: 'var(--color-text)', marginBottom: '4px'}}>Lan Anh</h3>
-            <span style={{ fontSize: 12, background: '#f3f4f6', color: '#4b5563', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}>Thành viên</span>
-          </div>
-        </div>
+        {loadingMembers ? (
+          <p style={{textAlign: 'center', color: '#666'}}>Đang tải danh sách thành viên...</p>
+        ) : members.length === 0 ? (
+          <p style={{textAlign: 'center', color: '#666'}}>Chưa có thành viên nào.</p>
+        ) : (
+          members.map((member, index) => {
+            const isHost = member.role.includes('Host');
+            return (
+              <div key={member.id} style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: index === members.length - 1 ? 0 : 24, paddingBottom: index === members.length - 1 ? 0 : 24, borderBottom: index === members.length - 1 ? 'none' : '1px solid #eee'}}>
+                <div className={`avatar-circle c${(index % 5) + 1}`} style={{width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', background: isHost ? '#e0f2fe' : '#fce7f3', color: isHost ? '#0369a1' : '#be185d', borderRadius: '50%', fontSize: '18px'}}>
+                  {member.initials}
+                </div>
+                <div>
+                  <h3 style={{fontSize: 16, fontWeight: '600', color: 'var(--color-text)', marginBottom: '4px'}}>{member.name}</h3>
+                  <span style={{ fontSize: 12, background: isHost ? '#fee2e2' : '#f3f4f6', color: isHost ? '#dc2626' : '#4b5563', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}>{member.role}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

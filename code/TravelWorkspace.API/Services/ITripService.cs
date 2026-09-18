@@ -12,5 +12,6 @@ namespace TravelWorkspace.API.Services
         Task<TripDto?> UpdateTripAsync(int tripId, UpdateTripDto request, int userId);
         Task<bool> DeleteTripAsync(int tripId, int userId);
         Task<bool> InviteMemberAsync(int tripId, InviteDto request, int inviterUserId);
+        Task<IEnumerable<MemberDto>> GetTripMembersAsync(int tripId, int userId);
     }
 }

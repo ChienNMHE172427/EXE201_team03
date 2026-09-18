@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [trips, setTrips] = useState([]);
   const [selectedTripId, setSelectedTripId] = useState(localStorage.getItem('currentTripId') ? parseInt(localStorage.getItem('currentTripId')) : null);
   const [trip, setTrip] = useState(null);
@@ -13,6 +14,7 @@ const ItineraryPage = () => {
   
   // For adding new item
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedInfoItem, setSelectedInfoItem] = useState(null);
   const [newItem, setNewItem] = useState({
     title: '', location: '', notes: '', startTime: '', endTime: '', transport: '', assignee: '', status: 'Chưa bắt đầu'
   });
@@ -23,12 +25,19 @@ const ItineraryPage = () => {
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
   const [isGeminiConnected, setIsGeminiConnected] = useState(localStorage.getItem('geminiConnected') === 'true');
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, message: '', onConfirm: null });
 
   useEffect(() => {
     const fetchTrips = async () => {
       try {
         const res = await api.get('/Trip');
         setTrips(res.data);
+
+        const params = new URLSearchParams(location.search);
+        const tripIdFromUrl = params.get('tripId');
+        if (tripIdFromUrl) {
+          handleSelectTrip({ id: parseInt(tripIdFromUrl) });
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -36,7 +45,7 @@ const ItineraryPage = () => {
       }
     };
     fetchTrips();
-  }, []);
+  }, [location.search]);
 
   const fetchTripData = async (id) => {
     try {
@@ -71,6 +80,12 @@ const ItineraryPage = () => {
   const handleAddItem = async (e) => {
     e.preventDefault();
     if (!selectedTripId) return;
+
+    if (!newItem.startTime || !newItem.endTime) {
+      alert('Vui lòng chọn Giờ & Ngày bắt đầu và kết thúc.');
+      return;
+    }
+
     try {
       const res = await api.post(`/Itinerary/${selectedTripId}`, newItem);
       setItems([...items, res.data].sort((a, b) => new Date(a.startTime) - new Date(b.startTime)));
@@ -78,34 +93,50 @@ const ItineraryPage = () => {
       setNewItem({ title: '', location: '', notes: '', startTime: '', endTime: '', transport: '', assignee: '', status: 'Chưa bắt đầu' });
     } catch (err) {
       console.error(err);
-      alert('Có lỗi khi thêm hoạt động.');
+      if (err.response && err.response.data && err.response.data.title) {
+        alert('Lỗi: ' + err.response.data.title);
+      } else {
+        alert('Có lỗi khi thêm hoạt động. Vui lòng kiểm tra lại thông tin.');
+      }
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa hoạt động này?')) return;
-    try {
-      await api.delete(`/Itinerary/${id}`);
-      setItems(items.filter(i => i.id !== id));
-    } catch (err) {
-      console.error(err);
-      alert('Lỗi khi xóa.');
-    }
+    setConfirmDialog({
+      isOpen: true,
+      message: 'Bạn có chắc muốn xóa hoạt động này?',
+      onConfirm: async () => {
+        setConfirmDialog({ isOpen: false, message: '', onConfirm: null });
+        try {
+          await api.delete(`/Itinerary/${id}`);
+          setItems(items.filter(i => i.id !== id));
+        } catch (err) {
+          console.error(err);
+          alert('Lỗi khi xóa.');
+        }
+      }
+    });
   };
 
   const handleGenerateAi = async () => {
-    if (!window.confirm('Hành động này sẽ XÓA TOÀN BỘ lịch trình hiện tại và thay thế bằng lịch trình do AI gợi ý. Bạn có chắc chắn?')) return;
-    setIsChatting(true);
-    try {
-      const res = await api.post(`/Itinerary/GenerateAi/${selectedTripId}`);
-      setItems(res.data);
-      setMessages([...messages, { role: 'ai', content: 'Mình đã tạo lại toàn bộ lịch trình cho bạn rồi nhé!' }]);
-    } catch (err) {
-      console.error(err);
-      alert('Lỗi khi tạo lịch trình AI.');
-    } finally {
-      setIsChatting(false);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      message: 'Hành động này sẽ XÓA TOÀN BỘ lịch trình hiện tại và thay thế bằng lịch trình do AI gợi ý. Bạn có chắc chắn?',
+      onConfirm: async () => {
+        setConfirmDialog({ isOpen: false, message: '', onConfirm: null });
+        setIsChatting(true);
+        try {
+          const res = await api.post(`/Itinerary/GenerateAi/${selectedTripId}`);
+          setItems(res.data);
+          setMessages([...messages, { role: 'ai', content: 'Mình đã tạo lại toàn bộ lịch trình cho bạn rồi nhé!' }]);
+        } catch (err) {
+          console.error(err);
+          alert('Lỗi khi tạo lịch trình AI.');
+        } finally {
+          setIsChatting(false);
+        }
+      }
+    });
   };
 
   const handleSendMessage = async () => {
@@ -137,6 +168,16 @@ const ItineraryPage = () => {
   };
 
   const updateItemStatus = async (item, newStatus) => {
+    if (newStatus !== 'Chưa bắt đầu' && item.transport === 'Vui lòng chọn dịch vụ') {
+      setConfirmDialog({ 
+        isOpen: true, 
+        message: 'Vui lòng chọn dịch vụ di chuyển trước khi lưu chặng này!', 
+        onConfirm: null, 
+        type: 'alert' 
+      });
+      return;
+    }
+    
     try {
       const updated = { ...item, status: newStatus };
       await api.put(`/Itinerary/${item.id}`, updated);
@@ -255,36 +296,43 @@ const ItineraryPage = () => {
               <div className="step-title">Cộng tác nhóm</div>
             </div>
           </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/documents?tripId=${selectedTripId}`)}>
+            <div className="step-circle">5</div>
+            <div className="step-info">
+              <div className="step-title">Trạng thái</div>
+            </div>
+          </div>
         </div>
       </div>
 
 
       {showAddForm && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{maxWidth: 500}}>
-            <h2>Thêm hoạt động mới</h2>
-            <form onSubmit={handleAddItem}>
+          <div className="modal-content" style={{maxWidth: 500, padding: 32, borderRadius: 24, background: '#fff'}}>
+            <h2 style={{ marginBottom: 24, fontSize: 24, color: 'var(--color-primary-dark)' }}>Thêm hoạt động mới</h2>
+            <form onSubmit={handleAddItem} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
-                <label>Tiêu đề</label>
-                <input type="text" value={newItem.title} onChange={e => setNewItem({...newItem, title: e.target.value})} required />
+                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Tiêu đề</label>
+                <input type="text" value={newItem.title} onChange={e => setNewItem({...newItem, title: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
               </div>
               <div className="form-group">
-                <label>Địa điểm</label>
-                <input type="text" value={newItem.location} onChange={e => setNewItem({...newItem, location: e.target.value})} required />
+                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Địa điểm</label>
+                <input type="text" value={newItem.location} onChange={e => setNewItem({...newItem, location: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
               </div>
-              <div style={{display: 'flex', gap: 16}}>
-                <div className="form-group" style={{flex: 1}}>
-                  <label>Bắt đầu (Giờ & Ngày)</label>
-                  <input type="datetime-local" value={newItem.startTime} onChange={e => setNewItem({...newItem, startTime: e.target.value})} required />
+              <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+                <div className="form-group" style={{width: '100%'}}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Bắt đầu (Giờ & Ngày)</label>
+                  <input type="datetime-local" value={newItem.startTime} onChange={e => setNewItem({...newItem, startTime: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s', fontFamily: 'inherit', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
                 </div>
-                <div className="form-group" style={{flex: 1}}>
-                  <label>Kết thúc (Giờ & Ngày)</label>
-                  <input type="datetime-local" value={newItem.endTime} onChange={e => setNewItem({...newItem, endTime: e.target.value})} required />
+                <div className="form-group" style={{width: '100%'}}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Kết thúc (Giờ & Ngày)</label>
+                  <input type="datetime-local" value={newItem.endTime} onChange={e => setNewItem({...newItem, endTime: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s', fontFamily: 'inherit', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
                 </div>
               </div>
               <div className="form-group">
-                <label>Ghi chú</label>
-                <textarea rows="3" value={newItem.notes} onChange={e => setNewItem({...newItem, notes: e.target.value})} style={{width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd'}}></textarea>
+                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Ghi chú</label>
+                <textarea rows="3" value={newItem.notes} onChange={e => setNewItem({...newItem, notes: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s', resize: 'vertical' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'}></textarea>
               </div>
               <div style={{display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24}}>
                 <button type="button" className="btn-secondary" onClick={() => setShowAddForm(false)}>Hủy</button>
@@ -404,15 +452,52 @@ const ItineraryPage = () => {
                       <div key={item.id} className="timeline-item">
                         <div className="timeline-dot"></div>
                         <div className="itinerary-card">
-                          <div className="itinerary-card-header">
-                            <div className="itinerary-time">
-                              {new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} 
-                              {item.endTime && item.endTime !== item.startTime ? ` - ${new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}` : ''}
+                            <div className="itinerary-card-header">
+                              <div className="itinerary-time">
+                                {new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} 
+                                {item.endTime && item.endTime !== item.startTime ? ` - ${new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}` : ''}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button 
+                                  className={(!item.status || item.status === 'Chưa bắt đầu') ? 'btn-primary' : 'btn-secondary'} 
+                                  style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '4px' }}
+                                  onClick={async () => {
+                                    if (!item.status || item.status === 'Chưa bắt đầu') {
+                                      await updateItemStatus(item, 'Đã chuẩn bị');
+                                    }
+                                  }}
+                                >
+                                  {(!item.status || item.status === 'Chưa bắt đầu') ? 'Lưu' : 'Đã lưu'}
+                                </button>
+                                <button 
+                                  className="btn-secondary" 
+                                  style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '50%', minWidth: '24px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  onClick={() => {
+                                    setMessages(prev => [...prev, { role: 'ai', content: `Bạn muốn thay đổi gì ở giai đoạn "${item.title}"?` }]);
+                                    setTimeout(() => {
+                                      const input = document.querySelector('.chat-input');
+                                      if(input) input.focus();
+                                    }, 100);
+                                  }}
+                                  title="Hỏi AI"
+                                >
+                                  ?
+                                </button>
+                                <button 
+                                  className="btn-secondary" 
+                                  style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '50%', minWidth: '24px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  onClick={() => {
+                                    setSelectedInfoItem(item);
+                                  }}
+                                  title="Xem thông tin chi tiết"
+                                >
+                                  i
+                                </button>
+                                <button className="btn-delete-icon" onClick={() => handleDelete(item.id)} title="Xóa">
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                              </div>
                             </div>
-                            <button className="btn-delete-icon" onClick={() => handleDelete(item.id)} title="Xóa">
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
-                          </div>
 
                           <div className="itinerary-card-body">
                             <h4 className="itinerary-card-title">{item.title}</h4>
@@ -426,15 +511,15 @@ const ItineraryPage = () => {
                                   Bản đồ
                                 </button>
                               )}
-                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Di chuyển`)}>
+                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Di chuyển&itemId=${item.id}&search=${encodeURIComponent(item.location)}`)}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v9c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>
                                 Di chuyển
                               </button>
-                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Lưu trú`)}>
+                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Lưu trú&itemId=${item.id}&search=${encodeURIComponent(item.location)}`)}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
                                 Lưu trú
                               </button>
-                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Ăn uống`)}>
+                              <button className="service-btn" onClick={() => navigate(`/explore?tripId=${selectedTripId}&category=Ăn uống&itemId=${item.id}&search=${encodeURIComponent(item.location)}`)}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>
                                 Ăn uống
                               </button>
@@ -451,6 +536,45 @@ const ItineraryPage = () => {
           )}
         </div>
       </div>
+
+      {selectedInfoItem && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="modal-content" style={{maxWidth: 400, padding: '32px', borderRadius: '24px', background: '#fff', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'}}>
+            <h2 style={{ marginBottom: '16px', fontSize: '24px', color: 'var(--color-primary-dark)' }}>Thông tin chi tiết</h2>
+            <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+              <p style={{ marginBottom: '8px' }}><strong>Tên hoạt động/Dịch vụ:</strong> <br/>{selectedInfoItem.title}</p>
+              <p style={{ marginBottom: '8px' }}><strong>Điểm đi:</strong> <br/>{selectedInfoItem.location}</p>
+              <p style={{ marginBottom: '8px' }}><strong>Điểm đến:</strong> <br/>{selectedInfoItem.destination || 'Vui lòng chọn dịch vụ'}</p>
+              {selectedInfoItem.transport && <p style={{ marginBottom: '8px' }}><strong>Di chuyển:</strong> <br/>{selectedInfoItem.transport}</p>}
+              {selectedInfoItem.notes && <p style={{ marginBottom: '8px' }}><strong>Ghi chú:</strong> <br/>{selectedInfoItem.notes}</p>}
+            </div>
+            <button className="btn-primary" onClick={() => setSelectedInfoItem(null)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {confirmDialog.isOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="modal-content" style={{maxWidth: 400, padding: '32px', borderRadius: '24px', background: '#fff', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'}}>
+            <h2 style={{ marginBottom: '16px', fontSize: '24px', color: 'var(--color-primary-dark)' }}>
+              {confirmDialog.type === 'alert' ? 'Thông báo' : 'Xác nhận'}
+            </h2>
+            <p style={{ marginBottom: '24px', color: 'var(--color-text-muted)', fontSize: '16px', lineHeight: '1.5' }}>
+              {confirmDialog.message}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              {confirmDialog.type === 'alert' ? (
+                <button className="btn-primary" onClick={() => setConfirmDialog({ isOpen: false, message: '', onConfirm: null, type: 'confirm' })}>Đóng</button>
+              ) : (
+                <>
+                  <button className="btn-secondary" onClick={() => setConfirmDialog({ isOpen: false, message: '', onConfirm: null, type: 'confirm' })}>Hủy</button>
+                  <button className="btn-primary" style={{ backgroundColor: '#ef4444' }} onClick={confirmDialog.onConfirm}>Đồng ý</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -139,5 +139,44 @@ namespace TravelWorkspace.API.Services
                 CreatedAt = trip.CreatedAt
             };
         }
+
+        public async Task<IEnumerable<MemberDto>> GetTripMembersAsync(int tripId, int userId)
+        {
+            var trip = await _context.Trips
+                .Include(t => t.Owner)
+                .Include(t => t.Members)
+                    .ThenInclude(m => m.User)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null) return new List<MemberDto>();
+            
+            bool isMember = trip.OwnerId == userId || trip.Members.Any(m => m.UserId == userId);
+            if (!isMember) return new List<MemberDto>();
+
+            var members = new List<MemberDto>();
+
+            string ownerInitials = string.Join("", trip.Owner.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(s => s[0])).ToUpper();
+            members.Add(new MemberDto
+            {
+                Id = trip.OwnerId,
+                Name = trip.Owner.FullName,
+                Role = "Quản trị viên (Host)",
+                Initials = ownerInitials
+            });
+
+            foreach (var m in trip.Members)
+            {
+                string initials = string.Join("", m.User.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(s => s[0])).ToUpper();
+                members.Add(new MemberDto
+                {
+                    Id = m.UserId,
+                    Name = m.User.FullName,
+                    Role = m.Role,
+                    Initials = initials
+                });
+            }
+
+            return members;
+        }
     }
 }

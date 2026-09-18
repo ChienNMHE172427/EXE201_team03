@@ -61,6 +61,14 @@ namespace TravelWorkspace.API.Controllers
             return Ok(trip);
         }
 
+        [HttpGet("{id}/members")]
+        public async Task<ActionResult<IEnumerable<MemberDto>>> GetTripMembers(int id)
+        {
+            var userId = GetUserId();
+            var members = await _tripService.GetTripMembersAsync(id, userId);
+            return Ok(members);
+        }
+
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteTrip(int id)
         {

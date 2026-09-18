@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import './BudgetPage.css';
 
 const BudgetPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [trips, setTrips] = useState([]);
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [trip, setTrip] = useState(null);
@@ -21,6 +22,12 @@ const BudgetPage = () => {
       try {
         const res = await api.get('/Trip');
         setTrips(res.data);
+
+        const params = new URLSearchParams(location.search);
+        const tripIdFromUrl = params.get('tripId');
+        if (tripIdFromUrl) {
+          setSelectedTripId(parseInt(tripIdFromUrl));
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -28,7 +35,7 @@ const BudgetPage = () => {
       }
     };
     fetchTrips();
-  }, []);
+  }, [location.search]);
 
   const fetchBudget = async (id) => {
     try {
@@ -151,6 +158,13 @@ const BudgetPage = () => {
             <div className="step-circle">4</div>
             <div className="step-info">
               <div className="step-title">Cộng tác nhóm</div>
+            </div>
+          </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/documents?tripId=${selectedTripId}`)}>
+            <div className="step-circle">5</div>
+            <div className="step-info">
+              <div className="step-title">Trạng thái</div>
             </div>
           </div>
         </div>

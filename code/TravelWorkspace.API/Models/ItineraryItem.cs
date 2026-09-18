@@ -8,6 +8,7 @@ namespace TravelWorkspace.API.Models
         
         public string Title { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
         
         public DateTime StartTime { get; set; }

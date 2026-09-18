@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import './ExplorePage.css';
-
-// Dữ liệu giả lập các dịch vụ (Mock Data)
-const MOCK_SERVICES = [
-  { id: 1, type: 'NHÀ HÀNG', category: 'Ăn uống', title: 'Nhà hàng Ba Cửa', rating: 4.8, reviews: 124, price: '$$', desc: 'Đặc sản thịt dê núi Ninh Bình ngon nức tiếng, không gian rộng rãi. Gần Tràng An.', badge: 'Phù hợp nhóm', imgClass: 'i1' },
-  { id: 2, type: 'THAM QUAN', category: 'Tham quan', title: 'Tuyệt Tình Cốc', rating: 4.9, reviews: 342, price: '$', desc: 'Hồ nước trong xanh tuyệt đẹp bao quanh bởi núi đá vôi hùng vĩ. Gần Cố đô Hoa Lư.', badge: null, imgClass: 'i2' },
-  { id: 3, type: 'LƯU TRÚ', category: 'Lưu trú', title: 'Emeralda Resort', rating: 4.7, reviews: 89, price: '$$$', desc: 'Resort phong cách làng quê Bắc Bộ tĩnh lặng và cao cấp.', badge: 'Đang giảm 15%', imgClass: 'i3' },
-  { id: 4, type: 'DI CHUYỂN', category: 'Di chuyển', title: 'Limousine Tràng An', rating: 4.5, reviews: 56, price: '$$', desc: 'Đưa đón tận nơi tại các điểm tham quan chính ở Ninh Bình và Cố đô Hoa Lư.', badge: null, imgClass: 'i1' },
-  { id: 5, type: 'THAM QUAN', category: 'Tham quan', title: 'Cố đô Hoa Lư', rating: 4.6, reviews: 512, price: '$', desc: 'Khu di tích lịch sử quốc gia đặc biệt, kinh đô đầu tiên của nhà nước phong kiến tập quyền.', badge: 'Di tích lịch sử', imgClass: 'i2' }
-];
+import MOCK_SERVICES from '../servicesData.json';
 
 const ExplorePage = () => {
   const [trips, setTrips] = useState([]);
@@ -23,6 +15,10 @@ const ExplorePage = () => {
   // State tìm kiếm và lọc Dịch vụ
   const [searchLocationQuery, setSearchLocationQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Tất cả");
+  
+  // State modal thông báo
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [targetItemId, setTargetItemId] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,6 +34,16 @@ const ExplorePage = () => {
         const params = new URLSearchParams(location.search);
         const tripIdParam = params.get('tripId');
         const categoryParam = params.get('category');
+        const searchParam = params.get('search');
+        const itemIdParam = params.get('itemId');
+
+        if (itemIdParam) {
+          setTargetItemId(itemIdParam);
+        }
+
+        if (searchParam) {
+          setSearchLocationQuery(searchParam);
+        }
 
         if (tripIdParam) {
           const matchedTrip = loadedTrips.find(t => t.id.toString() === tripIdParam);
@@ -45,6 +51,9 @@ const ExplorePage = () => {
             setSelectedTrip(matchedTrip);
             if (categoryParam) {
               setActiveCategory(categoryParam);
+            }
+            if (!searchParam) {
+              setSearchLocationQuery(matchedTrip.destination);
             }
           }
         }
@@ -173,6 +182,13 @@ const ExplorePage = () => {
               <div className="step-title">Cộng tác nhóm</div>
             </div>
           </div>
+          <div className="step-line"></div>
+          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/documents?tripId=${selectedTrip.id}`)}>
+            <div className="step-circle">5</div>
+            <div className="step-info">
+              <div className="step-title">Trạng thái</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -228,12 +244,71 @@ const ExplorePage = () => {
                   <span className="price">{svc.price}</span>
                 </div>
                 <p className="card-desc">{svc.desc}</p>
-                <button className="btn-outline w-full">+ Thêm vào lịch</button>
+                <button 
+                  className="btn-outline w-full"
+                  onClick={async () => {
+                    if (!selectedTrip) return;
+                    try {
+                      if (targetItemId) {
+                        const tripRes = await api.get(`/Itinerary/${selectedTrip.id}`);
+                        const itemToUpdate = tripRes.data.find(i => i.id.toString() === targetItemId);
+                        if (itemToUpdate) {
+                          if (svc.category === 'Di chuyển') {
+                            itemToUpdate.transport = svc.title;
+                          } else {
+                            itemToUpdate.destination = svc.title;
+                            itemToUpdate.notes = (itemToUpdate.notes ? itemToUpdate.notes + '\n' : '') + `${svc.category}: ${svc.title}`;
+                          }
+                          await api.put(`/Itinerary/${targetItemId}`, itemToUpdate);
+                        }
+                      } else {
+                        const today = new Date();
+                        today.setHours(12, 0, 0, 0);
+                        const newItem = {
+                          title: svc.title,
+                          location: selectedTrip.destination,
+                          destination: svc.title,
+                          notes: `Dịch vụ: ${svc.type}\n${svc.desc}`,
+                          startTime: today.toISOString(),
+                          endTime: today.toISOString(),
+                          transport: 'Vui lòng chọn dịch vụ',
+                          assignee: '',
+                          status: 'Chưa bắt đầu'
+                        };
+                        await api.post(`/Itinerary/${selectedTrip.id}`, newItem);
+                      }
+                      setShowSuccessModal(true);
+                    } catch (err) {
+                      console.error(err);
+                      alert('Có lỗi xảy ra khi thêm vào lịch trình.');
+                    }
+                  }}
+                >
+                  + Thêm vào lịch
+                </button>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {showSuccessModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="modal-content" style={{ backgroundColor: 'white', padding: '32px', borderRadius: '16px', textAlign: 'center', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ fontSize: '56px', marginBottom: '16px', color: '#10b981' }}>✅</div>
+            <h2 style={{ marginBottom: '12px', color: 'var(--color-text)', fontSize: '24px' }}>Thêm thành công!</h2>
+            <p style={{ marginBottom: '24px', color: 'var(--color-text-muted)', fontSize: '15px' }}>Dịch vụ này đã được thêm vào lịch trình của bạn.</p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setShowSuccessModal(false)} style={{ flex: 1 }}>
+                Đóng
+              </button>
+              <button className="btn-primary" onClick={() => navigate(`/itinerary?tripId=${selectedTrip.id}`)} style={{ flex: 1 }}>
+                Xem lịch trình
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
