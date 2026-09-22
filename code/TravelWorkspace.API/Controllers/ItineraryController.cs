@@ -221,6 +221,7 @@ namespace TravelWorkspace.API.Controllers
         public class ChatAiRequest
         {
             public string Message { get; set; } = string.Empty;
+            public List<ChatMessageDto> History { get; set; } = new List<ChatMessageDto>();
         }
 
         [HttpPost("ChatAi/{tripId}")]
@@ -235,7 +236,7 @@ namespace TravelWorkspace.API.Controllers
             var currentItems = await _context.ItineraryItems.Where(i => i.TripId == tripId).OrderBy(i => i.StartTime).ToListAsync();
 
             var userApiKey = Request.Headers["X-Gemini-API-Key"].FirstOrDefault();
-            var aiResponse = await _geminiService.ChatAndModifyItineraryAsync(request.Message, currentItems, trip, userApiKey);
+            var aiResponse = await _geminiService.ChatAndModifyItineraryAsync(request.Message, request.History, currentItems, trip, userApiKey);
 
             if (aiResponse.Items != null && aiResponse.Items.Any())
             {

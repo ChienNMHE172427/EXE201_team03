@@ -6,6 +6,8 @@ const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('All');
 
   const fetchUsers = async () => {
     try {
@@ -26,20 +28,65 @@ const AdminUsers = () => {
     fetchUsers();
   }, []);
 
-  const toggleUserStatus = async (id, currentRole) => {
-    if (currentRole === 'Admin') {
+  const toggleUserStatus = async (user) => {
+    if (user.role === 'Admin') {
       alert('Không thể khóa tài khoản Admin!');
       return;
     }
     
+    const action = user.isActive ? 'khóa' : 'mở khóa';
+    const reason = window.prompt(`Nhập lý do ${action} tài khoản này (bắt buộc):`);
+    if (!reason) {
+        alert('Phải nhập lý do!');
+        return;
+    }
+    
     try {
-      await api.put(`/admin/users/${id}/toggle-status`);
-      // Refresh list
-      fetchUsers();
+      await api.put(`/admin/users/${user.id}/toggle-status`, { reason });
+      setUsers(users.map(u => u.id === user.id ? { ...u, isActive: !u.isActive } : u));
     } catch (err) {
       alert('Lỗi khi cập nhật trạng thái.');
     }
   };
+
+  const deleteUser = async (id, currentRole) => {
+    if (currentRole === 'Admin') {
+      alert('Không thể xóa tài khoản Admin!');
+      return;
+    }
+    
+    const reason = window.prompt('Bạn có chắc muốn XÓA vĩnh viễn tài khoản này? Nhập lý do xóa (bắt buộc):');
+    if (!reason) {
+        alert('Phải nhập lý do!');
+        return;
+    }
+    
+    try {
+      await api.delete(`/admin/users/${id}?reason=${encodeURIComponent(reason)}`);
+      setUsers(users.filter(u => u.id !== id));
+    } catch (err) {
+      alert('Lỗi khi xóa người dùng.');
+    }
+  };
+
+  const promoteUser = async (id, currentRole) => {
+    if (currentRole === 'Admin') return;
+    if (!window.confirm('Bạn có chắc muốn thăng cấp người dùng này thành Admin?')) return;
+
+    try {
+      await api.put(`/admin/users/${id}/promote`);
+      fetchUsers();
+    } catch (err) {
+      alert('Lỗi khi thăng quyền.');
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          user.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'All' || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
 
   if (loading) return <div className="admin-page">Đang tải dữ liệu...</div>;
 
@@ -49,7 +96,26 @@ const AdminUsers = () => {
       {error && <div className="error-message" style={{color: 'red', marginBottom: '20px'}}>{error}</div>}
       
       {!error && (
-        <div className="table-container">
+        <>
+          <div style={{display: 'flex', gap: '16px', marginBottom: '20px'}}>
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm email hoặc tên..." 
+              style={{padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc', flex: 1}}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <select 
+              style={{padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc'}}
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+            >
+              <option value="All">Tất cả vai trò</option>
+              <option value="Traveler">Traveler</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          <div className="table-container">
           <table className="admin-table">
             <thead>
               <tr>
@@ -63,7 +129,7 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map(user => (
+              {filteredUsers.map(user => (
                 <tr key={user.id}>
                   <td>{user.id}</td>
                   <td>{user.fullName}</td>
@@ -82,16 +148,36 @@ const AdminUsers = () => {
                   <td>
                     <button 
                       className={`btn-action ${user.isActive ? 'delete' : 'edit'}`}
-                      onClick={() => toggleUserStatus(user.id, user.role)}
+                      onClick={() => toggleUserStatus(user)}
+                      disabled={user.role === 'Admin'}
+                      style={{ opacity: user.role === 'Admin' ? 0.5 : 1, marginRight: '8px' }}
                     >
                       {user.isActive ? 'Khóa' : 'Mở khóa'}
                     </button>
+                    {user.role !== 'Admin' && (
+                      <>
+                        <button 
+                          className="btn-action edit"
+                          onClick={() => promoteUser(user.id, user.role)}
+                          style={{ marginRight: '8px' }}
+                        >
+                          Lên Admin
+                        </button>
+                        <button 
+                          className="btn-action delete"
+                          onClick={() => deleteUser(user.id, user.role)}
+                        >
+                          Xóa
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

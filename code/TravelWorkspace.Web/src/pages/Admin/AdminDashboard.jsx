@@ -44,9 +44,9 @@ const AdminDashboard = () => {
           <div className="stat-trend">Chưa ra mắt</div>
         </div>
         <div className="stat-card">
-          <h3>Tổng chi tiêu ghi nhận</h3>
-          <div className="stat-value">${stats.totalRevenue.toLocaleString()}</div>
-          <div className="stat-trend positive">Doanh thu dự kiến</div>
+          <h3>Ước tính doanh thu Affiliate</h3>
+          <div className="stat-value">{(stats.totalRevenue * 0.05).toLocaleString('vi-VN')} ₫</div>
+          <div className="stat-trend positive">Tạm tính (5% tổng chi tiêu)</div>
         </div>
       </div>
 

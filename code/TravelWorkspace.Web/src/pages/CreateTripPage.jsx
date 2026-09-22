@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import api from '../services/api';
+import { getShortLocation } from '../utils/formatLocation';
 import './CreateTripPage.css';
 
 const CreateTripPage = () => {
@@ -39,9 +41,51 @@ const CreateTripPage = () => {
     setLoading(true);
     setError('');
     
+    // Validation
+    if (!formData.origin.trim() || !formData.destination.trim()) {
+      setError('Vui lòng nhập Nơi bắt đầu và Điểm đến.');
+      setLoading(false);
+      return;
+    }
+
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    if (end < start) {
+      setError('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.');
+      setLoading(false);
+      return;
+    }
+
+    const participants = parseInt(formData.numberOfParticipants);
+    if (isNaN(participants) || participants < 1) {
+      setError('Quy mô nhóm phải là số lớn hơn 0.');
+      setLoading(false);
+      return;
+    }
+
+    const budget = parseFloat(formData.budget);
+    if (isNaN(budget) || budget <= 0) {
+      setError('Ngân sách phải là số dương.');
+      setLoading(false);
+      return;
+    }
+
+    // Budget Rule Calculation
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    const rooms = Math.ceil(participants / 2);
+    
+    // Đã bỏ nhân số người/số phòng với số ngày theo yêu cầu
+    const totalMinBudget = (days * 1000000) + ((participants - 1) * 500000) + ((rooms - 1) * 500000);
+
+    if (budget < totalMinBudget) {
+      setError(`Ngân sách tối thiểu cho chuyến đi này là ${totalMinBudget.toLocaleString('vi-VN')} VNĐ.`);
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload = {
-        title: `Từ ${formData.origin} đi ${formData.destination}`,
+        title: `Từ ${getShortLocation(formData.origin)} đi ${getShortLocation(formData.destination)}`,
         origin: formData.origin,
         destination: formData.destination,
         startDate: new Date(formData.startDate).toISOString(),
@@ -125,13 +169,23 @@ const CreateTripPage = () => {
           {error && <div style={{background: '#FFEBEB', color: '#D32F2F', padding: 12, borderRadius: 8, marginBottom: 16}}>{error}</div>}
 
           <div className="form-row">
-            <div className="form-group">
+            <div className="form-group" style={{ position: 'relative' }}>
               <label>NƠI BẮT ĐẦU</label>
-              <input name="origin" type="text" className="form-input" placeholder="VD: Hà Nội, Việt Nam" value={formData.origin} onChange={handleInputChange} />
+              <LocationAutocomplete 
+                name="origin" 
+                placeholder="VD: Hà Nội, Việt Nam" 
+                value={formData.origin} 
+                onChange={handleInputChange} 
+              />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ position: 'relative' }}>
               <label>ĐIỂM ĐẾN</label>
-              <input name="destination" type="text" className="form-input" placeholder="VD: Ninh Bình, Việt Nam" value={formData.destination} onChange={handleInputChange} />
+              <LocationAutocomplete 
+                name="destination" 
+                placeholder="VD: Ninh Bình, Việt Nam" 
+                value={formData.destination} 
+                onChange={handleInputChange} 
+              />
             </div>
           </div>
 
@@ -186,7 +240,7 @@ const CreateTripPage = () => {
           <h3 className="summary-title">Tóm tắt chuyến đi</h3>
           
           <div className="summary-card">
-            <div className="summary-dest">{formData.destination || 'NINH BÌNH'}</div>
+            <div className="summary-dest">{getShortLocation(formData.destination) || 'NINH BÌNH'}</div>
             <div className="summary-main">Nhóm {formData.numberOfParticipants} người</div>
             <div className="summary-budget">Tổng ngân sách {totalBudget.toLocaleString('vi-VN')} đ</div>
           </div>

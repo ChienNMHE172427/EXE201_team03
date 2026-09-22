@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { getShortLocation } from '../utils/formatLocation';
 import './ExplorePage.css';
 import MOCK_SERVICES from '../servicesData.json';
+import hotelLinks from '../hotelLinks.json';
 
 const ExplorePage = () => {
   const [trips, setTrips] = useState([]);
@@ -30,6 +32,8 @@ const ExplorePage = () => {
         const loadedTrips = res.data;
         setTrips(loadedTrips);
 
+        // Removed local getShortName
+
         // Đọc tham số từ URL
         const params = new URLSearchParams(location.search);
         const tripIdParam = params.get('tripId');
@@ -42,7 +46,7 @@ const ExplorePage = () => {
         }
 
         if (searchParam) {
-          setSearchLocationQuery(searchParam);
+          setSearchLocationQuery(getShortLocation(searchParam));
         }
 
         if (tripIdParam) {
@@ -53,7 +57,7 @@ const ExplorePage = () => {
               setActiveCategory(categoryParam);
             }
             if (!searchParam) {
-              setSearchLocationQuery(matchedTrip.destination);
+              setSearchLocationQuery(getShortLocation(matchedTrip.destination));
             }
           }
         }
@@ -115,7 +119,7 @@ const ExplorePage = () => {
                   <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--color-primary)', textTransform: 'uppercase', marginBottom: '8px' }}>Lịch trình</div>
                   <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text)' }}>{t.title}</h3>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: '1.5' }}>
-                    <span style={{display: 'flex', alignItems: 'center'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {t.destination}</span>
+                    <span style={{display: 'flex', alignItems: 'center'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {getShortLocation(t.destination)}</span>
                     <span style={{display: 'flex', alignItems: 'center', marginTop: 4}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg> Khởi hành: {new Date(t.startDate).toLocaleDateString('vi-VN')}</span>
                   </p>
                   <div style={{ marginTop: '16px', fontWeight: '600', color: 'var(--color-primary)', fontSize: '14px' }}>
@@ -138,11 +142,23 @@ const ExplorePage = () => {
     // Lọc theo Category
     const matchCategory = activeCategory === "Tất cả" || svc.category === activeCategory;
     // Lọc theo Search Query (tìm trong title hoặc desc)
-    const q = searchLocationQuery.toLowerCase();
-    const matchSearch = svc.title.toLowerCase().includes(q) || svc.desc.toLowerCase().includes(q);
+    const q = searchLocationQuery.trim();
+    
+    // Hàm loại bỏ dấu tiếng Việt để tìm kiếm không phân biệt dấu
+    const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const qNorm = normalize(q);
+    const titleNorm = normalize(svc.title);
+    const descNorm = normalize(svc.desc);
+    
+    const matchSearch = titleNorm.includes(qNorm) || descNorm.includes(qNorm);
     
     return matchCategory && matchSearch;
   });
+
+  const getTravelokaLink = (svc) => {
+    if (!hotelLinks) return "https://www.traveloka.com";
+    return hotelLinks[svc.title] || "https://www.traveloka.com";
+  };
 
   return (
     <div className="page-container">
@@ -194,7 +210,7 @@ const ExplorePage = () => {
 
       <div className="page-header">
         <div>
-          <h1 className="page-title">Dịch vụ tại {selectedTrip.destination}</h1>
+          <h1 className="page-title">Dịch vụ tại {getShortLocation(selectedTrip.destination)}</h1>
           <p className="page-subtitle">Khám phá cho lịch trình: {selectedTrip.title}</p>
         </div>
         <div className="search-bar">
@@ -230,7 +246,7 @@ const ExplorePage = () => {
         {filteredServices.length === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', marginTop: '20px' }}>Không tìm thấy dịch vụ nào phù hợp với tìm kiếm của bạn.</p>
         ) : (
-          filteredServices.map(svc => (
+          filteredServices.map((svc, index) => (
             <div key={svc.id} className="explore-card">
               <div className={`card-image ${svc.imgClass}`}>
                 {svc.badge && <div className="badge-overlay">{svc.badge}</div>}
@@ -241,7 +257,9 @@ const ExplorePage = () => {
                 <div className="card-meta">
                   <span className="rating">★ {svc.rating}</span>
                   <span className="reviews">({svc.reviews} đánh giá)</span>
-                  <span className="price">{svc.price}</span>
+                  <span className="price" style={{ color: '#1BA0E2', fontSize: '13px', fontWeight: '500', marginLeft: 'auto' }}>
+                    {svc.category === 'Lưu trú' ? 'Xem giá trên web' : ''}
+                  </span>
                 </div>
                 <p className="card-desc">{svc.desc}</p>
                 <button 
@@ -286,6 +304,31 @@ const ExplorePage = () => {
                 >
                   + Thêm vào lịch
                 </button>
+                {svc.category === 'Lưu trú' && (
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <a href={
+                      (() => {
+                        if (!selectedTrip || !selectedTrip.startDate) return "https://www.agoda.com";
+                        const ci = new Date(selectedTrip.startDate).toISOString().split('T')[0];
+                        const coDate = new Date(selectedTrip.startDate); coDate.setDate(coDate.getDate() + 1);
+                        const co = selectedTrip.endDate ? new Date(selectedTrip.endDate).toISOString().split('T')[0] : coDate.toISOString().split('T')[0];
+                        return `https://www.agoda.com/search?textToSearch=${encodeURIComponent(svc.title)}&checkIn=${ci}&checkOut=${co}`;
+                      })()
+                    } target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: 'center', padding: '6px', border: '1px solid #eaeaea', borderRadius: '8px', textDecoration: 'none', color: '#333', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>Agoda</a>
+                    
+                    <a href={getTravelokaLink(svc)} target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: 'center', padding: '6px', border: '1px solid #eaeaea', borderRadius: '8px', textDecoration: 'none', color: '#1BA0E2', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>Traveloka</a>
+                    
+                    <a href={
+                      (() => {
+                        if (!selectedTrip || !selectedTrip.startDate) return "https://www.booking.com";
+                        const ci = new Date(selectedTrip.startDate).toISOString().split('T')[0];
+                        const coDate = new Date(selectedTrip.startDate); coDate.setDate(coDate.getDate() + 1);
+                        const co = selectedTrip.endDate ? new Date(selectedTrip.endDate).toISOString().split('T')[0] : coDate.toISOString().split('T')[0];
+                        return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(svc.title)}&checkin=${ci}&checkout=${co}`;
+                      })()
+                    } target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: 'center', padding: '6px', border: '1px solid #eaeaea', borderRadius: '8px', textDecoration: 'none', color: '#003580', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>Booking</a>
+                  </div>
+                )}
               </div>
             </div>
           ))

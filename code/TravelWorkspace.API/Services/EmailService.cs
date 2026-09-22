@@ -21,9 +21,14 @@ namespace TravelWorkspace.API.Services
             var senderEmail = emailSettings["SenderEmail"];
             var appPassword = emailSettings["AppPassword"];
             
-            // Nếu chưa cấu hình email thật, bỏ qua không gửi để không bị lỗi ứng dụng
+            // Nếu chưa cấu hình email thật, log ra console để test local
             if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(appPassword) || senderEmail == "your_email@gmail.com")
             {
+                Console.WriteLine("====================================================");
+                Console.WriteLine($"[MOCK EMAIL TỚI {toEmail}]");
+                Console.WriteLine($"Subject: {subject}");
+                Console.WriteLine($"Body: {body}");
+                Console.WriteLine("====================================================");
                 return;
             }
 

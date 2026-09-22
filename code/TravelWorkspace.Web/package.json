@@ -7,12 +7,14 @@
     "dev": "vite --open",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "update-prices": "node scripts/updateHotelPrices.js"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
     "axios": "^1.20.0",
     "lucide-react": "^1.46.0",
+    "puppeteer": "^25.11.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",

@@ -1,0 +1,42 @@
+[
+  {
+    "Id": 1,
+    "Name": "Khách sạn Mường Thanh Luxury Đà Nẵng",
+    "Location": "Đà Nẵng",
+    "ServiceType": "Hotel",
+    "OriginalLink": "https://www.traveloka.com/vi-vn/hotel/vietnam/muong-thanh-luxury-da-nang-hotel...",
+    "AffiliateLink": "DÁN_LINK_ACCESSTRADE_CỦA_BẠN_VÀO_ĐÂY"
+  },
+  {
+    "Id": 2,
+    "Name": "Vé xe khách Hoàng Long (Hà Nội - Sapa)",
+    "Location": "Sapa",
+    "ServiceType": "Bus",
+    "OriginalLink": "https://vexere.com/vi-VN/ve-xe-khach-hoang-long-tu-ha-noi-di-sapa...",
+    "AffiliateLink": "DÁN_LINK_ACCESSTRADE_CỦA_BẠN_VÀO_ĐÂY"
+  },
+  {
+    "Id": 3,
+    "Name": "Khu nghỉ dưỡng Vinpearl Resort Nha Trang",
+    "Location": "Nha Trang",
+    "ServiceType": "Resort",
+    "OriginalLink": "https://www.agoda.com/vi-vn/vinpearl-resort-nha-trang/...",
+    "AffiliateLink": "DÁN_LINK_ACCESSTRADE_CỦA_BẠN_VÀO_ĐÂY"
+  },
+  {
+    "Id": 4,
+    "Name": "Tour tham quan Vịnh Hạ Long 2 ngày 1 đêm",
+    "Location": "Hạ Long",
+    "ServiceType": "Tour",
+    "OriginalLink": "https://www.traveloka.com/vi-vn/activities/vietnam/product/...",
+    "AffiliateLink": "DÁN_LINK_ACCESSTRADE_CỦA_BẠN_VÀO_ĐÂY"
+  },
+  {
+    "Id": 5,
+    "Name": "Khách sạn Novotel Phú Quốc",
+    "Location": "Phú Quốc",
+    "ServiceType": "Hotel",
+    "OriginalLink": "https://www.agoda.com/vi-vn/novotel-phu-quoc-resort/...",
+    "AffiliateLink": "DÁN_LINK_ACCESSTRADE_CỦA_BẠN_VÀO_ĐÂY"
+  }
+]

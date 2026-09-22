@@ -33,7 +33,9 @@ namespace TravelWorkspace.API.Services
             {
                 Email = request.Email,
                 FullName = request.FullName,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                ConfirmationToken = Guid.NewGuid().ToString(),
+                IsEmailConfirmed = false
             };
 
             _context.Users.Add(user);
@@ -42,11 +44,13 @@ namespace TravelWorkspace.API.Services
             // Gửi email chào mừng/xác thực
             try
             {
-                var subject = "Đăng ký thành công - Travel Workspace";
+                var confirmationLink = $"http://localhost:5173/confirm-email?email={user.Email}&token={user.ConfirmationToken}";
+                var subject = "Xác nhận đăng ký - Travel Workspace";
                 var body = $@"
                     <h2>Chào {user.FullName},</h2>
-                    <p>Chúc mừng bạn đã đăng ký tài khoản thành công tại <strong>Travel Workspace</strong>!</p>
-                    <p>Giờ đây bạn đã có thể bắt đầu tạo chuyến đi, rủ rê bạn bè và lên kế hoạch bằng AI.</p>
+                    <p>Cảm ơn bạn đã đăng ký tài khoản tại <strong>Travel Workspace</strong>!</p>
+                    <p>Vui lòng nhấn vào đường dẫn bên dưới để xác nhận email của bạn:</p>
+                    <p><a href='{confirmationLink}'>Xác nhận Email</a></p>
                     <br/>
                     <p>Trân trọng,<br/>Đội ngũ Travel Workspace</p>
                 ";
@@ -76,6 +80,9 @@ namespace TravelWorkspace.API.Services
             
             if (!user.IsActive)
                 throw new UnauthorizedAccessException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.");
+
+            if (!user.IsEmailConfirmed)
+                throw new UnauthorizedAccessException("Vui lòng kiểm tra email và xác nhận tài khoản trước khi đăng nhập.");
 
             return new AuthResponseDto
             {
@@ -119,6 +126,24 @@ namespace TravelWorkspace.API.Services
             {
                 return null;
             }
+        }
+
+        public async Task<bool> ConfirmEmailAsync(string email, string token)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+                return false;
+
+            if (user.IsEmailConfirmed)
+                return true;
+
+            if (user.ConfirmationToken != token)
+                return false;
+
+            user.IsEmailConfirmed = true;
+            user.ConfirmationToken = null;
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         private string GenerateJwtToken(User user)

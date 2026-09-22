@@ -26,6 +26,16 @@ namespace TravelWorkspace.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail([FromQuery] string email, [FromQuery] string token)
+        {
+            var result = await _authService.ConfirmEmailAsync(email, token);
+            if (!result)
+                return BadRequest("Invalid email confirmation request.");
+            
+            return Ok(new { message = "Email confirmed successfully." });
+        }
+
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponseDto>> Login(LoginDto request)
         {

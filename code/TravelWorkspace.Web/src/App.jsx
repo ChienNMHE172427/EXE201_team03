@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
+import ConfirmEmailPage from './pages/Auth/ConfirmEmailPage';
 import DashboardPage from './pages/DashboardPage';
 import CreateTripPage from './pages/CreateTripPage';
 import ExplorePage from './pages/ExplorePage';
@@ -14,6 +15,8 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminUsers from './pages/Admin/AdminUsers';
+import AdminPartners from './pages/Admin/AdminPartners';
+import AdminContent from './pages/Admin/AdminContent';
 import ProfilePage from './pages/ProfilePage';
 import ItineraryPage from './pages/ItineraryPage';
 import CollaboratePage from './pages/CollaboratePage';
@@ -39,13 +42,15 @@ const App = () => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         
         {/* Admin Routes */}
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<Layout><AdminDashboard /></Layout>} />
           <Route path="/admin/users" element={<Layout><AdminUsers /></Layout>} />
-          <Route path="/admin/services" element={<Layout><div className="admin-page"><h2>Duyệt dịch vụ (Coming soon)</h2></div></Layout>} />
+          <Route path="/admin/partners" element={<Layout><AdminPartners /></Layout>} />
+          <Route path="/admin/content" element={<Layout><AdminContent /></Layout>} />
         </Route>
 
         {/* Traveler Routes */}

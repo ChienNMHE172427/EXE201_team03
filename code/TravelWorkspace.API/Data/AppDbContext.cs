@@ -17,6 +17,7 @@ namespace TravelWorkspace.API.Data
         public DbSet<ItineraryItem> ItineraryItems { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<TodoItem> TodoItems { get; set; }
+        public DbSet<AffiliatePartner> AffiliatePartners { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

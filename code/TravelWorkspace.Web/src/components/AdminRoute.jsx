@@ -9,19 +9,19 @@ const AdminRoute = () => {
   }
 
   try {
-    // Decode JWT token to check role (basic approach without library)
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const role = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-    
-    if (role === 'Admin') {
-      return <Outlet />;
-    } else {
-      // Not admin, redirect to normal dashboard
-      return <Navigate to="/dashboard" replace />;
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.role === 'Admin') {
+        return <Outlet />;
+      }
     }
   } catch (error) {
-    return <Navigate to="/login" replace />;
+    // Fallback
   }
+
+  // Not admin, redirect to normal dashboard
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default AdminRoute;

@@ -8,5 +8,6 @@ namespace TravelWorkspace.API.Services
         Task<AuthResponseDto?> RegisterAsync(RegisterDto request);
         Task<AuthResponseDto?> LoginAsync(LoginDto request);
         Task<AuthResponseDto?> GoogleLoginAsync(GoogleLoginDto request);
+        Task<bool> ConfirmEmailAsync(string email, string token);
     }
 }

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
@@ -67,9 +68,9 @@ const DashboardPage = () => {
           {trips.map(trip => (
             <div key={trip.id} className="hero-banner" style={{ margin: 0 }}>
               <div className="badge">MỚI TẠO</div>
-              <h2 className="hero-title">{trip.title}</h2>
+              <h2 className="hero-title">{formatItemTitle(trip.title)}</h2>
               <p className="hero-subtitle">
-                Điểm đến: {trip.destination} · Từ {new Date(trip.startDate).toLocaleDateString('vi-VN')} đến {new Date(trip.endDate).toLocaleDateString('vi-VN')}
+                Điểm đến: {getShortLocation(trip.destination)} · Từ {new Date(trip.startDate).toLocaleDateString('vi-VN')} đến {new Date(trip.endDate).toLocaleDateString('vi-VN')}
               </p>
               
               <div className="hero-actions">

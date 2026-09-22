@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
+import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
+  const getMapQuery = (item) => {
+    let query = item.location || '';
+    if (item.destination && item.destination !== 'Vui lòng chọn dịch vụ') {
+      query = `${item.destination}, ${item.location}`;
+    } else if (item.title && !item.title.toLowerCase().includes('khởi hành') && !item.title.toLowerCase().includes('đến')) {
+      query = `${item.title}, ${item.location}`;
+    }
+    return encodeURIComponent(query.trim());
+  };
+
   const navigate = useNavigate();
   const location = useLocation();
   const [trips, setTrips] = useState([]);
@@ -148,7 +159,11 @@ const ItineraryPage = () => {
     setIsChatting(true);
 
     try {
-      const res = await api.post(`/Itinerary/ChatAi/${selectedTripId}`, { message: userMessage });
+      const history = messages.filter(m => m.content !== 'Đang suy nghĩ...');
+      const res = await api.post(`/Itinerary/ChatAi/${selectedTripId}`, { 
+        message: userMessage,
+        history: history 
+      });
       const { reply, items: newItems } = res.data;
       
       setMessages(prev => [...prev, { role: 'ai', content: reply || 'Đã cập nhật lịch trình theo yêu cầu của bạn.' }]);
@@ -182,6 +197,31 @@ const ItineraryPage = () => {
       const updated = { ...item, status: newStatus };
       await api.put(`/Itinerary/${item.id}`, updated);
       setItems(items.map(i => i.id === item.id ? updated : i));
+
+      // Tự động chuyển qua trang Chi phí kèm theo tên các dịch vụ
+      if (newStatus === 'Đã chuẩn bị') {
+        const services = [];
+        if (item.transport && item.transport !== 'Vui lòng chọn dịch vụ') {
+            services.push(item.transport);
+        }
+        if (item.notes) {
+            const lines = item.notes.split('\n');
+            lines.forEach(line => {
+                if (line.includes(': ')) {
+                    const parts = line.split(': ');
+                    if (parts.length === 2) {
+                        services.push(parts[1].trim());
+                    }
+                }
+            });
+        }
+        
+        if (services.length === 0) {
+            services.push(formatItemTitle(item.title));
+        }
+
+        navigate(`/budget?tripId=${selectedTripId}&autoExpenses=${encodeURIComponent(JSON.stringify(services))}`);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -234,7 +274,7 @@ const ItineraryPage = () => {
                   <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text)' }}>{t.title}</h3>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: '1.5' }}>
                     <span style={{display: 'flex', alignItems: 'center'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Nhóm: {t.numberOfParticipants || 1} người</span>
-                    <span style={{display: 'flex', alignItems: 'center', marginTop: 4}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {t.destination}</span>
+                    <span style={{display: 'flex', alignItems: 'center', marginTop: 4}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {getShortLocation(t.destination)}</span>
                   </p>
                   <div style={{ marginTop: '16px', fontWeight: '600', color: '#ff7b89', fontSize: '14px' }}>
                     + Mở lịch trình chi tiết
@@ -261,7 +301,7 @@ const ItineraryPage = () => {
       <div style={{ marginBottom: '24px' }}>
         <button onClick={handleBack} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary-dark)', cursor: 'pointer', fontWeight: '700', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          {trip.title}
+          {formatItemTitle(trip.title)}
         </button>
       </div>
 
@@ -422,11 +462,11 @@ const ItineraryPage = () => {
           ) : (
             Object.entries(groupedItems).map(([date, dayItems], groupIndex) => {
               const totalDays = Object.keys(groupedItems).length;
-              let dayTitle = `Khám phá ${trip.destination}`;
+              let dayTitle = `Khám phá ${getShortLocation(trip.destination)}`;
               if (groupIndex === 0) {
-                dayTitle = `Từ ${trip.origin} đi ${trip.destination}`;
+                dayTitle = `Từ ${getShortLocation(trip.origin)} đi ${getShortLocation(trip.destination)}`;
               } else if (groupIndex === totalDays - 1) {
-                dayTitle = `Từ ${trip.destination} về ${trip.origin}`;
+                dayTitle = `Từ ${getShortLocation(trip.destination)} về ${getShortLocation(trip.origin)}`;
               }
 
               return (
@@ -473,7 +513,7 @@ const ItineraryPage = () => {
                                   className="btn-secondary" 
                                   style={{ padding: '4px 8px', fontSize: '12px', borderRadius: '50%', minWidth: '24px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                   onClick={() => {
-                                    setMessages(prev => [...prev, { role: 'ai', content: `Bạn muốn thay đổi gì ở giai đoạn "${item.title}"?` }]);
+                                    setMessages(prev => [...prev, { role: 'ai', content: `Bạn muốn thay đổi gì ở giai đoạn "${formatItemTitle(item.title)}"?` }]);
                                     setTimeout(() => {
                                       const input = document.querySelector('.chat-input');
                                       if(input) input.focus();
@@ -500,13 +540,13 @@ const ItineraryPage = () => {
                             </div>
 
                           <div className="itinerary-card-body">
-                            <h4 className="itinerary-card-title">{item.title}</h4>
+                            <h4 className="itinerary-card-title">{formatItemTitle(item.title)}</h4>
                           </div>
 
                           <div className="itinerary-card-footer">
                             <div className="itinerary-services">
                               {item.location && (
-                                <button className="service-btn map-btn" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`, '_blank')}>
+                                <button className="service-btn map-btn" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${getMapQuery(item)}`, '_blank')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                                   Bản đồ
                                 </button>
@@ -542,9 +582,9 @@ const ItineraryPage = () => {
           <div className="modal-content" style={{maxWidth: 400, padding: '32px', borderRadius: '24px', background: '#fff', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'}}>
             <h2 style={{ marginBottom: '16px', fontSize: '24px', color: 'var(--color-primary-dark)' }}>Thông tin chi tiết</h2>
             <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-              <p style={{ marginBottom: '8px' }}><strong>Tên hoạt động/Dịch vụ:</strong> <br/>{selectedInfoItem.title}</p>
-              <p style={{ marginBottom: '8px' }}><strong>Điểm đi:</strong> <br/>{selectedInfoItem.location}</p>
-              <p style={{ marginBottom: '8px' }}><strong>Điểm đến:</strong> <br/>{selectedInfoItem.destination || 'Vui lòng chọn dịch vụ'}</p>
+              <p style={{ marginBottom: '8px' }}><strong>Tên hoạt động/Dịch vụ:</strong> <br/>{formatItemTitle(selectedInfoItem.title)}</p>
+              <p style={{ marginBottom: '8px' }}><strong>Điểm đi:</strong> <br/>{getShortLocation(selectedInfoItem.location)}</p>
+              <p style={{ marginBottom: '8px' }}><strong>Điểm đến:</strong> <br/>{selectedInfoItem.destination ? getShortLocation(selectedInfoItem.destination) : 'Vui lòng chọn dịch vụ'}</p>
               {selectedInfoItem.transport && <p style={{ marginBottom: '8px' }}><strong>Di chuyển:</strong> <br/>{selectedInfoItem.transport}</p>}
               {selectedInfoItem.notes && <p style={{ marginBottom: '8px' }}><strong>Ghi chú:</strong> <br/>{selectedInfoItem.notes}</p>}
             </div>

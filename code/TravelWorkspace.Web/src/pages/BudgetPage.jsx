@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
+import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import './BudgetPage.css';
 
 const BudgetPage = () => {
@@ -13,8 +14,7 @@ const BudgetPage = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   
-  const [desc, setDesc] = useState('');
-  const [amount, setAmount] = useState('');
+  const [draftExpenses, setDraftExpenses] = useState([{desc: '', price: '', quantity: 1}]);
 
   // Lấy danh sách chuyến đi ban đầu
   useEffect(() => {
@@ -27,6 +27,22 @@ const BudgetPage = () => {
         const tripIdFromUrl = params.get('tripId');
         if (tripIdFromUrl) {
           setSelectedTripId(parseInt(tripIdFromUrl));
+        }
+        
+        const autoExpenses = params.get('autoExpenses');
+        const autoExpense = params.get('autoExpense');
+        
+        if (autoExpenses) {
+          try {
+             const parsed = JSON.parse(decodeURIComponent(autoExpenses));
+             if (Array.isArray(parsed) && parsed.length > 0) {
+                 setDraftExpenses(parsed.map(d => ({desc: d, price: '', quantity: 1})));
+                 setShowForm(true);
+             }
+          } catch(e) {}
+        } else if (autoExpense) {
+          setDraftExpenses([{desc: autoExpense, price: '', quantity: 1}]);
+          setShowForm(true);
         }
       } catch (err) {
         console.error(err);
@@ -57,15 +73,26 @@ const BudgetPage = () => {
   }, [selectedTripId]);
 
   const handleAddExpense = async () => {
-    if (!desc || !amount || !selectedTripId) return;
+    if (!selectedTripId) return;
+    const validDrafts = draftExpenses.filter(d => d.desc && d.price);
+    if (validDrafts.length === 0) {
+       alert('Vui lòng nhập đầy đủ tên dịch vụ và đơn giá cho ít nhất 1 khoản chi!');
+       return;
+    }
+    
     try {
-      await api.post(`/trips/${selectedTripId}/expenses`, {
-        description: desc,
-        amount: parseFloat(amount)
-      });
-      setDesc('');
-      setAmount('');
+      await Promise.all(validDrafts.map(d => {
+        const finalAmount = parseFloat(d.price) * parseInt(d.quantity || 1);
+        return api.post(`/trips/${selectedTripId}/expenses`, {
+          description: d.desc + (d.quantity > 1 ? ` (x${d.quantity})` : ''),
+          amount: finalAmount
+        });
+      }));
+      
+      setDraftExpenses([{desc: '', price: '', quantity: 1}]);
       setShowForm(false);
+      // Remove query param to prevent form re-opening on reload
+      navigate(`/budget?tripId=${selectedTripId}`, { replace: true });
       fetchBudget(selectedTripId); // reload
     } catch(err) {
       alert('Lỗi: Không thể thêm chi phí.');
@@ -104,7 +131,7 @@ const BudgetPage = () => {
                   <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text)' }}>{t.title}</h3>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', lineHeight: '1.5' }}>
                     <span style={{display: 'flex', alignItems: 'center'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Nhóm: {t.numberOfParticipants || 1} người</span>
-                    <span style={{display: 'flex', alignItems: 'center', marginTop: 4}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {t.destination}</span>
+                    <span style={{display: 'flex', alignItems: 'center', marginTop: 4}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 6}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Điểm đến: {getShortLocation(t.destination)}</span>
                   </p>
                   <div style={{ marginTop: '16px', fontWeight: '600', color: '#ff7b89', fontSize: '14px' }}>
                     + Mở quản lý chi phí
@@ -172,7 +199,7 @@ const BudgetPage = () => {
 
       <div className="page-header">
         <div>
-          <h1 className="page-title">Chi phí: {trip.title}</h1>
+          <h1 className="page-title">Chi phí: {formatItemTitle(trip.title)}</h1>
           <p className="page-subtitle">Kiểm soát ngân sách và chia tiền minh bạch.</p>
         </div>
         <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
@@ -182,11 +209,48 @@ const BudgetPage = () => {
 
       {showForm && (
         <div style={{ background: '#fff', padding: 24, borderRadius: 16, marginBottom: 32, boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{marginBottom: 16}}>Ghi nhận chi phí mới</h3>
-          <div style={{display: 'flex', gap: 16}}>
-            <input type="text" className="form-input" placeholder="Tên khoản chi (VD: Vé Tràng An)" value={desc} onChange={e => setDesc(e.target.value)} style={{flex: 2}} />
-            <input type="number" className="form-input" placeholder="Số tiền (VNĐ)" value={amount} onChange={e => setAmount(e.target.value)} style={{flex: 1}} />
-            <button className="btn-primary" onClick={handleAddExpense}>Lưu chi phí</button>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+            <h3 style={{margin: 0}}>Ghi nhận chi phí mới</h3>
+            <button className="btn-secondary" style={{padding: '6px 12px', fontSize: '13px'}} onClick={() => setDraftExpenses([...draftExpenses, {desc: '', price: '', quantity: 1}])}>+ Thêm dòng</button>
+          </div>
+          {draftExpenses.map((draft, index) => (
+            <div key={index} style={{display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: draftExpenses.length > 1 ? 16 : 0}}>
+              <div style={{flex: 2}}>
+                {index === 0 && <label style={{fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 4, display: 'block'}}>TÊN DỊCH VỤ</label>}
+                <input type="text" className="form-input" placeholder="Tên khoản chi (VD: Vé Tràng An)" value={draft.desc} onChange={e => {
+                  const newDrafts = [...draftExpenses];
+                  newDrafts[index].desc = e.target.value;
+                  setDraftExpenses(newDrafts);
+                }} />
+              </div>
+              <div style={{flex: 1}}>
+                {index === 0 && <label style={{fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 4, display: 'block'}}>ĐƠN GIÁ (VNĐ)</label>}
+                <input type="number" className="form-input" placeholder="Giá 1 dịch vụ" value={draft.price} onChange={e => {
+                  const newDrafts = [...draftExpenses];
+                  newDrafts[index].price = e.target.value;
+                  setDraftExpenses(newDrafts);
+                }} />
+              </div>
+              <div style={{flex: 0.5}}>
+                {index === 0 && <label style={{fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 4, display: 'block'}}>SỐ LƯỢNG</label>}
+                <input type="number" className="form-input" min="1" value={draft.quantity} onChange={e => {
+                  const newDrafts = [...draftExpenses];
+                  newDrafts[index].quantity = e.target.value;
+                  setDraftExpenses(newDrafts);
+                }} />
+              </div>
+              <div style={{flex: 0.5, display: 'flex', flexDirection: 'column', justifyContent: index === 0 ? 'flex-end' : 'center', height: index === 0 ? '62px' : 'auto', paddingTop: index === 0 ? 0 : 8}}>
+                 {draftExpenses.length > 1 && (
+                   <button onClick={() => setDraftExpenses(draftExpenses.filter((_, i) => i !== index))} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 8, fontWeight: 'bold'}}>Xóa</button>
+                 )}
+              </div>
+            </div>
+          ))}
+          <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 16}}>
+             <div style={{fontWeight: 'bold', color: 'var(--color-primary-dark)', marginRight: 16, fontSize: '15px'}}>
+                Tổng cộng: {draftExpenses.reduce((sum, d) => sum + (parseFloat(d.price) || 0) * (parseInt(d.quantity) || 1), 0).toLocaleString('vi-VN')} đ
+             </div>
+             <button className="btn-primary" onClick={handleAddExpense}>Lưu tất cả chi phí</button>
           </div>
         </div>
       )}

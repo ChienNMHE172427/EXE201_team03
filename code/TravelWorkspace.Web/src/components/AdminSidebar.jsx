@@ -22,8 +22,11 @@ const AdminSidebar = () => {
         <NavLink to="/admin/users" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Quản lý người dùng
         </NavLink>
-        <NavLink to="/admin/services" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Duyệt dịch vụ
+        <NavLink to="/admin/partners" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Quản lý đối tác
+        </NavLink>
+        <NavLink to="/admin/content" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Quản lý nội dung
         </NavLink>
       </div>
 
