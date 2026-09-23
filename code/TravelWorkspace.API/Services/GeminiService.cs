@@ -62,7 +62,7 @@ namespace TravelWorkspace.API.Services
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
-                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={apiKey}", content);
                 if (response.IsSuccessStatusCode) break;
                 if ((int)response.StatusCode == 503 || (int)response.StatusCode == 429)
                 {
@@ -151,7 +151,7 @@ namespace TravelWorkspace.API.Services
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
-                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={apiKey}", content);
                 if (response.IsSuccessStatusCode) break;
                 if ((int)response.StatusCode == 503 || (int)response.StatusCode == 429)
                 {
@@ -294,7 +294,7 @@ Do NOT use markdown code blocks like ```json. Just return the raw JSON object.";
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
-                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={apiKey}", content);
                 if (response.IsSuccessStatusCode) break;
                 if ((int)response.StatusCode == 503 || (int)response.StatusCode == 429)
                 {
