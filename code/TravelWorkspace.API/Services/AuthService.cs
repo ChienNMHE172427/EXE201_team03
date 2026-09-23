@@ -35,7 +35,7 @@ namespace TravelWorkspace.API.Services
                 FullName = request.FullName,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 ConfirmationToken = Guid.NewGuid().ToString(),
-                IsEmailConfirmed = true // Tạm thời bỏ qua xác thực email để dễ test
+                IsEmailConfirmed = false
             };
 
             _context.Users.Add(user);
@@ -44,7 +44,7 @@ namespace TravelWorkspace.API.Services
             // Gửi email chào mừng/xác thực
             try
             {
-                var confirmationLink = $"http://localhost:5173/confirm-email?email={user.Email}&token={user.ConfirmationToken}";
+                var confirmationLink = $"https://exe-201-team03.vercel.app/confirm-email?email={user.Email}&token={user.ConfirmationToken}";
                 var subject = "Xác nhận đăng ký - Travel Workspace";
                 var body = $@"
                     <h2>Chào {user.FullName},</h2>
