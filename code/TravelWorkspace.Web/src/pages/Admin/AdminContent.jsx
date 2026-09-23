@@ -79,7 +79,7 @@ const AdminContent = () => {
                   <td>{trip.destination}</td>
                   <td>{new Date(trip.startDate).toLocaleDateString('vi-VN')}</td>
                   <td>
-                    <button className="btn-action edit" onClick={() => window.open(`http://localhost:5173/itinerary?tripId=${trip.id}`, '_blank')}>Xem</button>
+                    <button className="btn-action edit" onClick={() => window.open(`/itinerary?tripId=${trip.id}`, '_blank')}>Xem</button>
                     <button className="btn-action delete" onClick={() => deleteTrip(trip.id)}>Xóa</button>
                   </td>
                 </tr>

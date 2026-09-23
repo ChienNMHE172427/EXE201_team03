@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -27,10 +27,7 @@ const ProfilePage = () => {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5299/api/User/profile', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/User/profile');
       setProfile(response.data);
       setLoading(false);
     } catch (error) {
@@ -65,10 +62,8 @@ const ProfilePage = () => {
   const updateProfile = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.put('http://localhost:5299/api/User/profile', 
-        { fullName: profile.fullName, avatarUrl: profile.avatarUrl },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await api.put('/User/profile', 
+        { fullName: profile.fullName, avatarUrl: profile.avatarUrl }
       );
       setProfileMsg({ type: 'success', text: 'Cập nhật thông tin thành công!' });
       
@@ -98,13 +93,11 @@ const ProfilePage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5299/api/User/change-password', 
+      await api.post('/User/change-password', 
         { 
           currentPassword: passwords.currentPassword,
           newPassword: passwords.newPassword
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       );
       setPasswordMsg({ type: 'success', text: 'Đổi mật khẩu thành công!' });
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
