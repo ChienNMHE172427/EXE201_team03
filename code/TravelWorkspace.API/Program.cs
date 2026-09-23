@@ -66,7 +66,8 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 
     // Khởi tạo Admin
-    if (!context.Users.Any(u => u.Email == "admin@travelworkspace.com"))
+    var adminUser = context.Users.FirstOrDefault(u => u.Email == "admin@travelworkspace.com");
+    if (adminUser == null)
     {
         context.Users.Add(new TravelWorkspace.API.Models.User
         {
@@ -74,8 +75,14 @@ using (var scope = app.Services.CreateScope())
             FullName = "Administrator",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
             Role = "Admin",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            IsEmailConfirmed = true
         });
+        context.SaveChanges();
+    }
+    else if (!adminUser.IsEmailConfirmed)
+    {
+        adminUser.IsEmailConfirmed = true;
         context.SaveChanges();
     }
 }
