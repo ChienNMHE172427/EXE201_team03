@@ -14,7 +14,7 @@ const RegisterPage = () => {
     e.preventDefault();
     try {
       await api.post('/auth/register', { fullName, email, password });
-      alert('Đăng ký thành công! Vui lòng kiểm tra email của bạn và nhấn vào link để xác nhận tài khoản trước khi đăng nhập.');
+      alert('Đăng ký thành công! Chuyển hướng đến trang đăng nhập...');
       navigate('/login');
     } catch (err) {
       if (err.message === 'Network Error') {
