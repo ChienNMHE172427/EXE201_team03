@@ -58,7 +58,7 @@ namespace TravelWorkspace.API.Services
 
             var contentString = JsonSerializer.Serialize(requestBody);
             HttpResponseMessage response = null;
-            int maxRetries = 3;
+            int maxRetries = 1;
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
@@ -147,7 +147,7 @@ namespace TravelWorkspace.API.Services
 
             var contentString = JsonSerializer.Serialize(requestBody);
             HttpResponseMessage response = null;
-            int maxRetries = 3;
+            int maxRetries = 1;
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
@@ -290,7 +290,7 @@ Do NOT use markdown code blocks like ```json. Just return the raw JSON object.";
 
             var contentString = JsonSerializer.Serialize(requestBody);
             HttpResponseMessage response = null;
-            int maxRetries = 3;
+            int maxRetries = 1;
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
