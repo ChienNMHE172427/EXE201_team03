@@ -32,19 +32,28 @@ namespace TravelWorkspace.API.Services
                 return;
             }
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Travel Workspace", senderEmail));
-            message.To.Add(new MailboxAddress("", toEmail));
-            message.Subject = subject;
+            // Bỏ qua gửi email thực tế vì Render Free chặn các cổng SMTP (25, 465, 587)
+            // Nếu cố gửi sẽ bị treo (hang) request trong 2 phút.
+            Console.WriteLine("====================================================");
+            Console.WriteLine($"[RENDER BLOCKED SMTP - MOCK EMAIL TỚI {toEmail}]");
+            Console.WriteLine($"Subject: {subject}");
+            Console.WriteLine($"Body: {body}");
+            Console.WriteLine("====================================================");
+            await Task.CompletedTask;
+            
+            // var message = new MimeMessage();
+            // message.From.Add(new MailboxAddress("Travel Workspace", senderEmail));
+            // message.To.Add(new MailboxAddress("", toEmail));
+            // message.Subject = subject;
 
-            var bodyBuilder = new BodyBuilder { HtmlBody = body };
-            message.Body = bodyBuilder.ToMessageBody();
+            // var bodyBuilder = new BodyBuilder { HtmlBody = body };
+            // message.Body = bodyBuilder.ToMessageBody();
 
-            using var client = new SmtpClient();
-            await client.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(senderEmail, appPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            // using var client = new SmtpClient();
+            // await client.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+            // await client.AuthenticateAsync(senderEmail, appPassword);
+            // await client.SendAsync(message);
+            // await client.DisconnectAsync(true);
         }
     }
 }

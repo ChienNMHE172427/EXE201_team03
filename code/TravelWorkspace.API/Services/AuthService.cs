@@ -35,7 +35,7 @@ namespace TravelWorkspace.API.Services
                 FullName = request.FullName,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 ConfirmationToken = Guid.NewGuid().ToString(),
-                IsEmailConfirmed = false
+                IsEmailConfirmed = true // Bỏ qua xác nhận email vì Render Free chặn cổng SMTP
             };
 
             _context.Users.Add(user);
