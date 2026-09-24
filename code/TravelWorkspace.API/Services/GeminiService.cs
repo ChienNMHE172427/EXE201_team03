@@ -317,7 +317,20 @@ Do NOT use markdown code blocks like ```json. Just return the raw JSON object.";
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Gemini API Error: {response.StatusCode} - {errorContent}");
-                fallbackResponse.Reply = $"Xin lỗi, mình gặp lỗi khi kết nối với AI: {response.StatusCode} - {errorContent}";
+                
+                if ((int)response.StatusCode == 429)
+                {
+                    fallbackResponse.Reply = "Rất xin lỗi, hệ thống AI hiện tại đã hết lượt sử dụng miễn phí. Vui lòng thử lại sau ít phút nhé!";
+                }
+                else if ((int)response.StatusCode == 503)
+                {
+                    fallbackResponse.Reply = "Hệ thống AI đang quá tải do có quá nhiều yêu cầu. Bạn vui lòng chờ một lát rồi thử lại nha.";
+                }
+                else
+                {
+                    fallbackResponse.Reply = "Xin lỗi, mình đang gặp sự cố kết nối với hệ thống AI. Vui lòng thử lại sau.";
+                }
+                
                 return fallbackResponse;
             }
 
