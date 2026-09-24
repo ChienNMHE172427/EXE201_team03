@@ -64,85 +64,99 @@ namespace TravelWorkspace.API.Controllers
         [HttpPost("{tripId}")]
         public async Task<ActionResult<ItineraryItemDto>> CreateItineraryItem(int tripId, CreateItineraryItemDto request)
         {
-            var userId = GetUserId();
-            if (!await IsUserInTrip(tripId, userId)) return Forbid();
-
-            var trip = await _context.Trips.FindAsync(tripId);
-            if (trip == null) return NotFound();
-
-            var item = new ItineraryItem
+            try 
             {
-                TripId = tripId,
-                Title = request.Title,
-                Location = request.Location,
-                Destination = request.Destination,
-                Notes = request.Notes,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime,
-                Transport = request.Transport,
-                Assignee = request.Assignee,
-                Status = request.Status ?? "Chưa bắt đầu"
-            };
+                var userId = GetUserId();
+                if (!await IsUserInTrip(tripId, userId)) return Forbid();
 
-            _context.ItineraryItems.Add(item);
-            await _context.SaveChangesAsync();
+                var trip = await _context.Trips.FindAsync(tripId);
+                if (trip == null) return NotFound();
 
-            var dto = new ItineraryItemDto
+                var item = new ItineraryItem
+                {
+                    TripId = tripId,
+                    Title = request.Title ?? "",
+                    Location = request.Location ?? "",
+                    Destination = request.Destination ?? "",
+                    Notes = request.Notes ?? "",
+                    StartTime = request.StartTime.ToUniversalTime(),
+                    EndTime = request.EndTime.ToUniversalTime(),
+                    Transport = request.Transport ?? "",
+                    Assignee = request.Assignee ?? "",
+                    Status = request.Status ?? "Chưa bắt đầu"
+                };
+
+                _context.ItineraryItems.Add(item);
+                await _context.SaveChangesAsync();
+
+                var dto = new ItineraryItemDto
+                {
+                    Id = item.Id,
+                    TripId = item.TripId,
+                    Title = item.Title,
+                    Location = item.Location,
+                    Destination = item.Destination,
+                    Notes = item.Notes,
+                    StartTime = item.StartTime,
+                    EndTime = item.EndTime,
+                    Transport = item.Transport,
+                    Assignee = item.Assignee,
+                    Status = item.Status,
+                    CreatedAt = item.CreatedAt
+                };
+
+                return CreatedAtAction(nameof(GetTripItinerary), new { tripId = item.TripId }, dto);
+            }
+            catch (Exception ex)
             {
-                Id = item.Id,
-                TripId = item.TripId,
-                Title = item.Title,
-                Location = item.Location,
-                Destination = item.Destination,
-                Notes = item.Notes,
-                StartTime = item.StartTime,
-                EndTime = item.EndTime,
-                Transport = item.Transport,
-                Assignee = item.Assignee,
-                Status = item.Status,
-                CreatedAt = item.CreatedAt
-            };
-
-            return CreatedAtAction(nameof(GetTripItinerary), new { tripId = item.TripId }, dto);
+                return StatusCode(500, new { title = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<ActionResult<ItineraryItemDto>> UpdateItineraryItem(int id, UpdateItineraryItemDto request)
         {
-            var userId = GetUserId();
-            
-            var item = await _context.ItineraryItems.FindAsync(id);
-            if (item == null) return NotFound();
-
-            if (!await IsUserInTrip(item.TripId, userId)) return Forbid();
-
-            item.Title = request.Title;
-            item.Location = request.Location;
-            item.Destination = request.Destination;
-            item.Notes = request.Notes;
-            item.StartTime = request.StartTime;
-            item.EndTime = request.EndTime;
-            item.Transport = request.Transport;
-            item.Assignee = request.Assignee;
-            item.Status = request.Status;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new ItineraryItemDto
+            try
             {
-                Id = item.Id,
-                TripId = item.TripId,
-                Title = item.Title,
-                Location = item.Location,
-                Destination = item.Destination,
-                Notes = item.Notes,
-                StartTime = item.StartTime,
-                EndTime = item.EndTime,
-                Transport = item.Transport,
-                Assignee = item.Assignee,
-                Status = item.Status,
-                CreatedAt = item.CreatedAt
-            });
+                var userId = GetUserId();
+                
+                var item = await _context.ItineraryItems.FindAsync(id);
+                if (item == null) return NotFound();
+
+                if (!await IsUserInTrip(item.TripId, userId)) return Forbid();
+
+                item.Title = request.Title ?? "";
+                item.Location = request.Location ?? "";
+                item.Destination = request.Destination ?? "";
+                item.Notes = request.Notes ?? "";
+                item.StartTime = request.StartTime.ToUniversalTime();
+                item.EndTime = request.EndTime.ToUniversalTime();
+                item.Transport = request.Transport ?? "";
+                item.Assignee = request.Assignee ?? "";
+                item.Status = request.Status ?? "Chưa bắt đầu";
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new ItineraryItemDto
+                {
+                    Id = item.Id,
+                    TripId = item.TripId,
+                    Title = item.Title,
+                    Location = item.Location,
+                    Destination = item.Destination,
+                    Notes = item.Notes,
+                    StartTime = item.StartTime,
+                    EndTime = item.EndTime,
+                    Transport = item.Transport,
+                    Assignee = item.Assignee,
+                    Status = item.Status,
+                    CreatedAt = item.CreatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { title = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         [HttpDelete("{id}")]
