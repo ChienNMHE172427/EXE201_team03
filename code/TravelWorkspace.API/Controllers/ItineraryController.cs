@@ -164,59 +164,66 @@ namespace TravelWorkspace.API.Controllers
         [HttpPost("GenerateAi/{tripId}")]
         public async Task<ActionResult<IEnumerable<ItineraryItemDto>>> GenerateAiItinerary(int tripId)
         {
-            var userId = GetUserId();
-            if (!await IsUserInTrip(tripId, userId)) return Forbid();
-
-            var trip = await _context.Trips.FindAsync(tripId);
-            if (trip == null) return NotFound();
-
-            // Xóa lịch trình cũ (nếu muốn thay thế hoàn toàn)
-            var oldItems = await _context.ItineraryItems.Where(i => i.TripId == tripId).ToListAsync();
-            _context.ItineraryItems.RemoveRange(oldItems);
-
-            var userApiKey = Request.Headers["X-Gemini-API-Key"].FirstOrDefault();
-
-            int days = Math.Max(1, (int)(trip.EndDate - trip.StartDate).TotalDays);
-            var aiItems = await _geminiService.GenerateItineraryJsonAsync(trip.Origin, trip.Destination, days, trip.StartDate, userApiKey);
-
-            var newItems = new List<ItineraryItem>();
-            foreach (var ai in aiItems)
+            try
             {
-                newItems.Add(new ItineraryItem
+                var userId = GetUserId();
+                if (!await IsUserInTrip(tripId, userId)) return Forbid();
+
+                var trip = await _context.Trips.FindAsync(tripId);
+                if (trip == null) return NotFound();
+
+                // Xóa lịch trình cũ (nếu muốn thay thế hoàn toàn)
+                var oldItems = await _context.ItineraryItems.Where(i => i.TripId == tripId).ToListAsync();
+                _context.ItineraryItems.RemoveRange(oldItems);
+
+                var userApiKey = Request.Headers["X-Gemini-API-Key"].FirstOrDefault();
+
+                int days = Math.Max(1, (int)(trip.EndDate - trip.StartDate).TotalDays);
+                var aiItems = await _geminiService.GenerateItineraryJsonAsync(trip.Origin, trip.Destination, days, trip.StartDate, userApiKey);
+
+                var newItems = new List<ItineraryItem>();
+                foreach (var ai in aiItems)
                 {
-                    TripId = tripId,
-                    Title = ai.Title,
-                    Location = ai.Location,
-                    Destination = ai.Destination,
-                    Notes = ai.Notes,
-                    StartTime = ai.StartTime,
-                    EndTime = ai.EndTime,
-                    Transport = ai.Transport,
-                    Assignee = ai.Assignee,
-                    Status = ai.Status
-                });
+                    newItems.Add(new ItineraryItem
+                    {
+                        TripId = tripId,
+                        Title = ai.Title,
+                        Location = ai.Location,
+                        Destination = ai.Destination,
+                        Notes = ai.Notes,
+                        StartTime = ai.StartTime,
+                        EndTime = ai.EndTime,
+                        Transport = ai.Transport,
+                        Assignee = ai.Assignee,
+                        Status = ai.Status
+                    });
+                }
+
+                _context.ItineraryItems.AddRange(newItems);
+                await _context.SaveChangesAsync();
+
+                var dtos = newItems.OrderBy(i => i.StartTime).Select(i => new ItineraryItemDto
+                {
+                    Id = i.Id,
+                    TripId = i.TripId,
+                    Title = i.Title,
+                    Location = i.Location,
+                    Destination = i.Destination,
+                    Notes = i.Notes,
+                    StartTime = i.StartTime,
+                    EndTime = i.EndTime,
+                    Transport = i.Transport,
+                    Assignee = i.Assignee,
+                    Status = i.Status,
+                    CreatedAt = i.CreatedAt
+                }).ToList();
+
+                return Ok(dtos);
             }
-
-            _context.ItineraryItems.AddRange(newItems);
-            await _context.SaveChangesAsync();
-
-            var dtos = newItems.OrderBy(i => i.StartTime).Select(i => new ItineraryItemDto
+            catch (Exception ex)
             {
-                Id = i.Id,
-                TripId = i.TripId,
-                Title = i.Title,
-                Location = i.Location,
-                Destination = i.Destination,
-                Notes = i.Notes,
-                StartTime = i.StartTime,
-                EndTime = i.EndTime,
-                Transport = i.Transport,
-                Assignee = i.Assignee,
-                Status = i.Status,
-                CreatedAt = i.CreatedAt
-            }).ToList();
-
-            return Ok(dtos);
+                return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace, innerException = ex.InnerException?.Message });
+            }
         }
         public class ChatAiRequest
         {

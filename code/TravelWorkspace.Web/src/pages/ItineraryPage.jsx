@@ -142,7 +142,11 @@ const ItineraryPage = () => {
           setMessages([...messages, { role: 'ai', content: 'Mình đã tạo lại toàn bộ lịch trình cho bạn rồi nhé!' }]);
         } catch (err) {
           console.error(err);
-          alert('Lỗi khi tạo lịch trình AI.');
+          if (err.response?.data?.error) {
+              alert('Lỗi AI: ' + err.response.data.error);
+          } else {
+              alert('Lỗi khi tạo lịch trình AI: ' + err.message);
+          }
         } finally {
           setIsChatting(false);
         }
