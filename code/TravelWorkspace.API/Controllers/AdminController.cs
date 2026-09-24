@@ -79,6 +79,22 @@ namespace TravelWorkspace.API.Controllers
             if (user.Role == "Admin")
                 return BadRequest("Cannot delete an Admin");
 
+            // Xóa các dữ liệu liên quan để tránh lỗi khóa ngoại (Foreign Key Constraint)
+            var todos = await _context.TodoItems.Where(td => td.AssignedToUserId == id).ToListAsync();
+            foreach (var td in todos) { td.AssignedToUserId = null; }
+
+            var messages = await _context.Messages.Where(m => m.UserId == id).ToListAsync();
+            _context.Messages.RemoveRange(messages);
+
+            var expenses = await _context.Expenses.Where(e => e.PaidById == id).ToListAsync();
+            _context.Expenses.RemoveRange(expenses);
+
+            var tripMembers = await _context.TripMembers.Where(tm => tm.UserId == id).ToListAsync();
+            _context.TripMembers.RemoveRange(tripMembers);
+
+            var ownedTrips = await _context.Trips.Where(t => t.OwnerId == id).ToListAsync();
+            _context.Trips.RemoveRange(ownedTrips);
+
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
 
