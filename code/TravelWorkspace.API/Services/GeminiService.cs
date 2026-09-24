@@ -328,7 +328,7 @@ Do NOT use markdown code blocks like ```json. Just return the raw JSON object.";
                 }
                 else
                 {
-                    fallbackResponse.Reply = "Xin lỗi, mình đang gặp sự cố kết nối với hệ thống AI. Vui lòng thử lại sau.";
+                    fallbackResponse.Reply = $"Lỗi kết nối AI: {response.StatusCode} - {errorContent}";
                 }
                 
                 return fallbackResponse;
