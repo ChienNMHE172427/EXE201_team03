@@ -98,7 +98,12 @@ const ItineraryPage = () => {
     }
 
     try {
-      const res = await api.post(`/Itinerary/${selectedTripId}`, newItem);
+      const payload = {
+        ...newItem,
+        startTime: new Date(newItem.startTime).toISOString(),
+        endTime: new Date(newItem.endTime).toISOString()
+      };
+      const res = await api.post(`/Itinerary/${selectedTripId}`, payload);
       setItems([...items, res.data].sort((a, b) => new Date(a.startTime) - new Date(b.startTime)));
       setShowAddForm(false);
       setNewItem({ title: '', location: '', notes: '', startTime: '', endTime: '', transport: '', assignee: '', status: 'Chưa bắt đầu' });
