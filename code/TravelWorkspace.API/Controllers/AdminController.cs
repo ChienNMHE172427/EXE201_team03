@@ -38,7 +38,7 @@ namespace TravelWorkspace.API.Controllers
         }
 
         [HttpPut("users/{id}/toggle-status")]
-        public async Task<IActionResult> ToggleUserStatus(int id, [FromBody] TravelWorkspace.API.Models.DTOs.StatusChangeRequest request)
+        public async Task<IActionResult> ToggleUserStatus(int id)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
@@ -49,17 +49,6 @@ namespace TravelWorkspace.API.Controllers
 
             user.IsActive = !user.IsActive;
             await _context.SaveChangesAsync();
-
-            var statusString = user.IsActive ? "được mở khóa" : "bị khóa";
-            var subject = $"Tài khoản của bạn đã {statusString}";
-            var body = $@"
-                <h2>Chào {user.FullName},</h2>
-                <p>Tài khoản của bạn tại <strong>Travel Workspace</strong> đã {statusString} bởi quản trị viên.</p>
-                <p><strong>Lý do:</strong> {request.Reason}</p>
-                <br/>
-                <p>Trân trọng,<br/>Đội ngũ Travel Workspace</p>
-            ";
-            try { await _emailService.SendEmailAsync(user.Email, subject, body); } catch {}
 
             return Ok(new { message = "Status toggled successfully", isActive = user.IsActive });
         }
@@ -81,7 +70,7 @@ namespace TravelWorkspace.API.Controllers
         }
 
         [HttpDelete("users/{id}")]
-        public async Task<IActionResult> DeleteUser(int id, [FromQuery] string reason)
+        public async Task<IActionResult> DeleteUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
@@ -90,21 +79,8 @@ namespace TravelWorkspace.API.Controllers
             if (user.Role == "Admin")
                 return BadRequest("Cannot delete an Admin");
 
-            var email = user.Email;
-            var name = user.FullName;
-
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
-
-            var subject = "Tài khoản của bạn đã bị xóa";
-            var body = $@"
-                <h2>Chào {name},</h2>
-                <p>Tài khoản của bạn tại <strong>Travel Workspace</strong> đã bị xóa vĩnh viễn bởi quản trị viên.</p>
-                <p><strong>Lý do:</strong> {reason}</p>
-                <br/>
-                <p>Trân trọng,<br/>Đội ngũ Travel Workspace</p>
-            ";
-            try { await _emailService.SendEmailAsync(email, subject, body); } catch {}
 
             return NoContent();
         }

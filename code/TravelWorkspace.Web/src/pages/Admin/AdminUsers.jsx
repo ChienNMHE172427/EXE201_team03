@@ -34,15 +34,8 @@ const AdminUsers = () => {
       return;
     }
     
-    const action = user.isActive ? 'khóa' : 'mở khóa';
-    const reason = window.prompt(`Nhập lý do ${action} tài khoản này (bắt buộc):`);
-    if (!reason) {
-        alert('Phải nhập lý do!');
-        return;
-    }
-    
     try {
-      await api.put(`/admin/users/${user.id}/toggle-status`, { reason });
+      await api.put(`/admin/users/${user.id}/toggle-status`, {});
       setUsers(users.map(u => u.id === user.id ? { ...u, isActive: !u.isActive } : u));
     } catch (err) {
       alert('Lỗi khi cập nhật trạng thái.');
@@ -55,14 +48,12 @@ const AdminUsers = () => {
       return;
     }
     
-    const reason = window.prompt('Bạn có chắc muốn XÓA vĩnh viễn tài khoản này? Nhập lý do xóa (bắt buộc):');
-    if (!reason) {
-        alert('Phải nhập lý do!');
+    if (!window.confirm('Bạn có chắc muốn XÓA vĩnh viễn tài khoản này?')) {
         return;
     }
     
     try {
-      await api.delete(`/admin/users/${id}?reason=${encodeURIComponent(reason)}`);
+      await api.delete(`/admin/users/${id}`);
       setUsers(users.filter(u => u.id !== id));
     } catch (err) {
       alert('Lỗi khi xóa người dùng.');
