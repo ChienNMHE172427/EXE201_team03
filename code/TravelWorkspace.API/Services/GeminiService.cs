@@ -58,11 +58,11 @@ namespace TravelWorkspace.API.Services
 
             var contentString = JsonSerializer.Serialize(requestBody);
             HttpResponseMessage response = null;
-            int maxRetries = 1;
+            int maxRetries = 3;
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
-                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={apiKey}", content);
                 if (response.IsSuccessStatusCode) break;
                 if ((int)response.StatusCode == 503 || (int)response.StatusCode == 429)
                 {
@@ -147,11 +147,11 @@ namespace TravelWorkspace.API.Services
 
             var contentString = JsonSerializer.Serialize(requestBody);
             HttpResponseMessage response = null;
-            int maxRetries = 1;
+            int maxRetries = 3;
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
-                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={apiKey}", content);
                 if (response.IsSuccessStatusCode) break;
                 if ((int)response.StatusCode == 503 || (int)response.StatusCode == 429)
                 {
@@ -290,11 +290,11 @@ Do NOT use markdown code blocks like ```json. Just return the raw JSON object.";
 
             var contentString = JsonSerializer.Serialize(requestBody);
             HttpResponseMessage response = null;
-            int maxRetries = 1;
+            int maxRetries = 3;
             for (int i = 0; i < maxRetries; i++)
             {
                 var content = new StringContent(contentString, Encoding.UTF8, "application/json");
-                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}", content);
+                response = await _httpClient.PostAsync($"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={apiKey}", content);
                 if (response.IsSuccessStatusCode) break;
                 if ((int)response.StatusCode == 503 || (int)response.StatusCode == 429)
                 {
