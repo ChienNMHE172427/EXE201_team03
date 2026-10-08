@@ -9,6 +9,7 @@ namespace TravelWorkspace.API.Models
         public string Role { get; set; } = "Traveler"; // "Traveler" or "Admin"
         public string AvatarUrl { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
+        public bool IsDeleted { get; set; } = false;
         public bool IsEmailConfirmed { get; set; } = false;
         public string? ConfirmationToken { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

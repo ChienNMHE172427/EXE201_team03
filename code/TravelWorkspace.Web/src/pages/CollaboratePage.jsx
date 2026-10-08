@@ -17,6 +17,8 @@ const CollaboratePage = () => {
   const [newTodo, setNewTodo] = useState('');
   
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const prevMessageCountRef = useRef(0);
   const currentUserId = parseInt(localStorage.getItem('userId') || '0');
 
   useEffect(() => {
@@ -39,24 +41,58 @@ const CollaboratePage = () => {
     fetchTrips();
   }, [location.search]);
 
+  // Polling riêng biệt kèm hàm cleanup ngăn chặn memory leak
   useEffect(() => {
     if (selectedTripId) {
+      prevMessageCountRef.current = 0; // Reset số lượng tin nhắn khi đổi chuyến đi
       fetchData(selectedTripId);
+
       const interval = setInterval(() => {
         fetchMessages(selectedTripId, false);
         fetchTodos(selectedTripId, false);
       }, 5000);
+
       return () => clearInterval(interval);
     }
   }, [selectedTripId]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
+
+  // Smart Auto-scroll: Chỉ cuộn khi số lượng tin nhắn thực sự tăng lên
+  useEffect(() => {
+    if (!messages || messages.length === 0) {
+      prevMessageCountRef.current = 0;
+      return;
+    }
+
+    const previousCount = prevMessageCountRef.current;
+    const currentCount = messages.length;
+
+    // Chỉ kiểm tra cuộn khi có thêm tin nhắn mới
+    if (currentCount > previousCount) {
+      const container = chatContainerRef.current;
+
+      // Lần đầu tải danh sách tin nhắn: cuộn thẳng xuống đáy
+      if (previousCount === 0) {
+        scrollToBottom(false);
+      } else {
+        // UX Enhancement: Kiểm tra vị trí thanh cuộn có đang ở gần đáy không (cách đáy <= 120px)
+        const isNearBottom = container
+          ? container.scrollHeight - container.scrollTop - container.clientHeight < 120
+          : true;
+
+        // Chỉ cuộn xuống nếu người dùng đang ở sát đáy; nếu đang cuộn lên đọc tin cũ thì giữ nguyên
+        if (isNearBottom) {
+          scrollToBottom(true);
+        }
+      }
+
+      // Cập nhật lại số lượng tin nhắn đã nhận
+      prevMessageCountRef.current = currentCount;
+    }
+  }, [messages]);
 
   const fetchData = async (id) => {
     try {
@@ -93,8 +129,9 @@ const CollaboratePage = () => {
     if (!newMessage.trim() || !selectedTripId) return;
     try {
       const res = await api.post(`/Collaborate/messages/${selectedTripId}`, { content: newMessage });
-      setMessages([...messages, res.data]);
+      setMessages(prev => [...prev, res.data]);
       setNewMessage('');
+      setTimeout(() => scrollToBottom(true), 50);
     } catch (err) {
       console.error(err);
     }
@@ -196,31 +233,17 @@ const CollaboratePage = () => {
             </div>
           </div>
           <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/explore?tripId=${selectedTripId}`)}>
-            <div className="step-circle">2</div>
-            <div className="step-info">
-              <div className="step-title">Khám phá & Dịch vụ</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
           <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTripId}`)}>
-            <div className="step-circle">3</div>
+            <div className="step-circle">2</div>
             <div className="step-info">
               <div className="step-title">Chi phí nhóm</div>
             </div>
           </div>
           <div className="step-line"></div>
           <div className="step active">
-            <div className="step-circle">4</div>
+            <div className="step-circle">3</div>
             <div className="step-info">
               <div className="step-title">Cộng tác nhóm</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/documents?tripId=${selectedTripId}`)}>
-            <div className="step-circle">5</div>
-            <div className="step-info">
-              <div className="step-title">Trạng thái</div>
             </div>
           </div>
         </div>
@@ -240,7 +263,7 @@ const CollaboratePage = () => {
             <h3>💬 Bảng Thảo Luận</h3>
           </div>
           
-          <div className="chat-messages">
+          <div className="chat-messages" ref={chatContainerRef}>
             {messages.length === 0 ? (
               <div className="empty-state">Chưa có tin nhắn nào. Hãy gửi lời chào đến mọi người!</div>
             ) : (

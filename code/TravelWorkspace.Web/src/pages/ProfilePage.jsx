@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -27,10 +27,7 @@ const ProfilePage = () => {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5299/api/User/profile', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/User/profile');
       setProfile(response.data);
       setLoading(false);
     } catch (error) {
@@ -39,22 +36,66 @@ const ProfilePage = () => {
     }
   };
 
+  const getAvatarUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+    const backendBase = (import.meta.env.VITE_API_URL || 'http://localhost:5300/api').replace(/\/api\/?$/, '');
+    return `${backendBase}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   const handleProfileChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Vui lòng chọn ảnh nhỏ hơn 2MB.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile({ ...profile, avatarUrl: reader.result });
-      };
-      reader.readAsDataURL(file);
+  const handleFileChange = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    // Kiểm tra dung lượng < 5MB
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      alert('Vui lòng chọn ảnh nhỏ hơn 5MB.');
+      return;
+    }
+
+    // Kiểm tra định dạng ảnh
+    const validExtensions = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validExtensions.includes(selectedFile.type)) {
+      alert('Chỉ chấp nhận các định dạng ảnh: .jpg, .jpeg, .png.');
+      return;
+    }
+
+    // Đóng gói file vào FormData để gửi multipart/form-data
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      setProfileMsg({ type: 'info', text: 'Đang tải ảnh đại diện lên máy chủ...' });
+
+      const response = await api.post('/User/upload-avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const newAvatarUrl = response.data.avatarUrl;
+      setProfile(prev => ({ ...prev, avatarUrl: newAvatarUrl }));
+
+      // Cập nhật thông tin trong LocalStorage và kích hoạt sự kiện cho Sidebar
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      storedUser.avatarUrl = newAvatarUrl;
+      localStorage.setItem('user', JSON.stringify(storedUser));
+      window.dispatchEvent(new Event('profileUpdated'));
+
+      setProfileMsg({ type: 'success', text: 'Cập nhật ảnh đại diện thành công!' });
+      setTimeout(() => setProfileMsg({ type: '', text: '' }), 3000);
+    } catch (error) {
+      console.error('Lỗi khi tải ảnh đại diện:', error);
+      setProfileMsg({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Có lỗi xảy ra khi tải ảnh đại diện.' 
+      });
     }
   };
 
@@ -65,11 +106,7 @@ const ProfilePage = () => {
   const updateProfile = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.put('http://localhost:5299/api/User/profile', 
-        { fullName: profile.fullName, avatarUrl: profile.avatarUrl },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put('/User/profile', { fullName: profile.fullName, avatarUrl: profile.avatarUrl });
       setProfileMsg({ type: 'success', text: 'Cập nhật thông tin thành công!' });
       
       // Update local storage and dispatch event so Sidebar updates
@@ -98,14 +135,10 @@ const ProfilePage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5299/api/User/change-password', 
-        { 
-          currentPassword: passwords.currentPassword,
-          newPassword: passwords.newPassword
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post('/User/change-password', { 
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword
+      });
       setPasswordMsg({ type: 'success', text: 'Đổi mật khẩu thành công!' });
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
       
@@ -135,7 +168,7 @@ const ProfilePage = () => {
         <form onSubmit={updateProfile}>
           <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
             {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="Avatar" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} />
+              <img src={getAvatarUrl(profile.avatarUrl)} alt="Avatar" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#005f56', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
                 {profile.fullName ? profile.fullName.substring(0, 2).toUpperCase() : 'ME'}

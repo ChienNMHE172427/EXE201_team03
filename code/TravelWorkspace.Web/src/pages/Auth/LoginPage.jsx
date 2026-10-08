@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import api from '../../services/api';
 import './Auth.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const infoMessage = location.state?.message;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -40,6 +42,24 @@ const LoginPage = () => {
         <h1 className="auth-logo">Travel Workspace</h1>
         <h2 className="auth-title">Chào mừng trở lại</h2>
         
+        {infoMessage && (
+          <div 
+            className="auth-info-banner" 
+            style={{
+              background: '#edf6f5',
+              color: '#1e6b65',
+              border: '1px solid #bddbd7',
+              padding: '10px 14px',
+              borderRadius: '10px',
+              fontSize: '13px',
+              marginBottom: '16px',
+              fontWeight: '600',
+              lineHeight: '1.4'
+            }}
+          >
+            ℹ️ {infoMessage}
+          </div>
+        )}
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleLogin}>
           <div className="form-group">

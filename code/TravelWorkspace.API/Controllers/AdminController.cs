@@ -93,7 +93,9 @@ namespace TravelWorkspace.API.Controllers
             var email = user.Email;
             var name = user.FullName;
 
-            _context.Users.Remove(user);
+            // Xóa mềm (Soft Delete) để bảo toàn toàn vẹn khóa ngoại (Foreign Key Integrity)
+            user.IsDeleted = true;
+            user.IsActive = false;
             await _context.SaveChangesAsync();
 
             var subject = "Tài khoản của bạn đã bị xóa";

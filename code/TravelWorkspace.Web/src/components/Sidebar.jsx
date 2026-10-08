@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-
+import api from '../services/api';
 const Sidebar = () => {
   const [user, setUser] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const fetchPendingCount = async () => {
+    try {
+      const res = await api.get('/users/me/invitations');
+      if (Array.isArray(res.data)) {
+        setPendingCount(res.data.length);
+      }
+    } catch {
+      // silently ignore if not logged in yet
+    }
+  };
 
   useEffect(() => {
     const loadUser = () => {
@@ -12,15 +24,34 @@ const Sidebar = () => {
       }
     };
     loadUser();
+    fetchPendingCount();
 
     window.addEventListener('profileUpdated', loadUser);
-    return () => window.removeEventListener('profileUpdated', loadUser);
+    window.addEventListener('invitationsUpdated', fetchPendingCount);
+
+    // Poll every 30s
+    const timer = setInterval(fetchPendingCount, 30000);
+
+    return () => {
+      window.removeEventListener('profileUpdated', loadUser);
+      window.removeEventListener('invitationsUpdated', fetchPendingCount);
+      clearInterval(timer);
+    };
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('currentTripId');
     window.location.href = '/login';
+  };
+
+  const getAvatarUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+    const backendBase = (import.meta.env.VITE_API_URL || 'http://localhost:5300/api').replace(/\/api\/?$/, '');
+    return `${backendBase}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
   const handleNavClick = (e, path) => {
@@ -38,8 +69,34 @@ const Sidebar = () => {
       </div>
 
       <div className="sidebar-nav" style={{ flex: 1 }}>
+        <NavLink to="/explore" onClick={(e) => handleNavClick(e, '/explore')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          🔥 Template Lịch trình
+        </NavLink>
         <NavLink to="/dashboard" onClick={(e) => handleNavClick(e, '/dashboard')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Chuyến đi của tôi
+        </NavLink>
+        <NavLink 
+          to="/invitations" 
+          onClick={(e) => handleNavClick(e, '/invitations')} 
+          className={({isActive}) => isActive ? "nav-item active" : "nav-item"}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🔔</span> Lời mời chuyến đi
+          </span>
+          {pendingCount > 0 && (
+            <span style={{ 
+              backgroundColor: '#ef4444', 
+              color: '#ffffff', 
+              fontSize: '11px', 
+              fontWeight: '700', 
+              padding: '2px 8px', 
+              borderRadius: '999px',
+              boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)'
+            }}>
+              {pendingCount}
+            </span>
+          )}
         </NavLink>
         <NavLink to="/create-trip" onClick={(e) => handleNavClick(e, '/create-trip')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Tạo chuyến đi
@@ -47,17 +104,17 @@ const Sidebar = () => {
         <NavLink to="/itinerary" onClick={(e) => handleNavClick(e, '/itinerary')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Lịch trình
         </NavLink>
-        <NavLink to="/explore" onClick={(e) => handleNavClick(e, '/explore')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Khám phá & đặt dịch vụ
-        </NavLink>
         <NavLink to="/budget" onClick={(e) => handleNavClick(e, '/budget')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Chi phí nhóm
         </NavLink>
-        <NavLink to="/documents" onClick={(e) => handleNavClick(e, '/documents')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Trạng thái
-        </NavLink>
         <NavLink to="/collaborate" onClick={(e) => handleNavClick(e, '/collaborate')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Cộng tác nhóm
+        </NavLink>
+        <NavLink to="/packing" onClick={(e) => handleNavClick(e, '/packing')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Hành lý thông minh
+        </NavLink>
+        <NavLink to="/gallery" onClick={(e) => handleNavClick(e, '/gallery')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Kho ảnh chung
         </NavLink>
         <NavLink to="/companions" onClick={(e) => handleNavClick(e, '/companions')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Bạn đồng hành
@@ -68,7 +125,7 @@ const Sidebar = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', color: 'inherit' }}>
             {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="Avatar" className="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+              <img src={getAvatarUrl(user.avatarUrl)} alt="Avatar" className="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               <div className="avatar">{user?.name ? user.name.substring(0, 2).toUpperCase() : 'ME'}</div>
             )}

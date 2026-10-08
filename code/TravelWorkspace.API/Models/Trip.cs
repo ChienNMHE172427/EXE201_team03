@@ -23,6 +23,10 @@ namespace TravelWorkspace.API.Models
         public ICollection<Message> Messages { get; set; } = new List<Message>();
         public ICollection<TodoItem> TodoItems { get; set; } = new List<TodoItem>();
         
+        public bool IsPublic { get; set; } = false;
+        public int CloneCount { get; set; } = 0;
+        public string? ImageUrl { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

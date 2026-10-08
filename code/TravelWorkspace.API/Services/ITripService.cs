@@ -13,5 +13,8 @@ namespace TravelWorkspace.API.Services
         Task<bool> DeleteTripAsync(int tripId, int userId);
         Task<bool> InviteMemberAsync(int tripId, InviteDto request, int inviterUserId);
         Task<IEnumerable<MemberDto>> GetTripMembersAsync(int tripId, int userId);
+        Task<int> CloneTripAsync(int originalTripId, CloneTripDto request, int userId);
+        Task<IEnumerable<TripDto>> GetPublicTripsAsync();
+        Task<bool> ApplyTemplateAsync(int targetTripId, int templateTripId, int userId, bool overwrite = false);
     }
 }

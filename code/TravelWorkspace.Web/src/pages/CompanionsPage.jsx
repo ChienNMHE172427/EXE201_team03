@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { getShortLocation } from '../utils/formatLocation';
+import { UserPlus } from 'lucide-react';
+import InviteMemberModal from '../components/InviteMemberModal';
 import './CompanionsPage.css';
 
 const CompanionsPage = () => {
@@ -9,6 +11,7 @@ const CompanionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -93,20 +96,13 @@ const CompanionsPage = () => {
           <h1 className="page-title">Nhóm đi {selectedTrip.title}</h1>
           <p className="page-subtitle">Quản lý {selectedTrip.numberOfParticipants || 1} thành viên và quyền truy cập vào chuyến đi này.</p>
         </div>
-        <button className="btn-primary" onClick={async () => {
-          const email = window.prompt("Nhập địa chỉ Email của người bạn muốn mời vào nhóm:");
-          if (!email) return;
-          
-          try {
-            await api.post(`/Trip/${selectedTrip.id}/invite`, {
-              email: email,
-              role: "Thành viên"
-            });
-            alert("Đã thêm thành viên thành công!");
-          } catch (err) {
-            alert("Không thể thêm thành viên. Vui lòng kiểm tra lại Email (người này phải có tài khoản trong hệ thống) hoặc bạn không phải là Chủ phòng.");
-          }
-        }}>+ Mời thành viên</button>
+        <button 
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:bg-teal-800 rounded-xl shadow-sm transition-all cursor-pointer hover:shadow-md"
+          onClick={() => setShowInviteModal(true)}
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>Mời thành viên</span>
+        </button>
       </div>
       
       <div className="timeline-section mt-8" style={{ background: '#fff', padding: '32px', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
@@ -116,12 +112,20 @@ const CompanionsPage = () => {
           <p style={{textAlign: 'center', color: '#666'}}>Chưa có thành viên nào.</p>
         ) : (
           members.map((member, index) => {
-            const isHost = member.role.includes('Host');
+            const isHost = (member.role || '').toLowerCase().includes('host');
             return (
               <div key={member.id} style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: index === members.length - 1 ? 0 : 24, paddingBottom: index === members.length - 1 ? 0 : 24, borderBottom: index === members.length - 1 ? 'none' : '1px solid #eee'}}>
-                <div className={`avatar-circle c${(index % 5) + 1}`} style={{width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', background: isHost ? '#e0f2fe' : '#fce7f3', color: isHost ? '#0369a1' : '#be185d', borderRadius: '50%', fontSize: '18px'}}>
-                  {member.initials}
-                </div>
+                {member.avatarUrl ? (
+                  <img
+                    src={member.avatarUrl}
+                    alt={member.name}
+                    style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div className={`avatar-circle c${(index % 5) + 1}`} style={{width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', background: isHost ? '#e0f2fe' : '#fce7f3', color: isHost ? '#0369a1' : '#be185d', borderRadius: '50%', fontSize: '18px'}}>
+                    {member.initials}
+                  </div>
+                )}
                 <div>
                   <h3 style={{fontSize: 16, fontWeight: '600', color: 'var(--color-text)', marginBottom: '4px'}}>{member.name}</h3>
                   <span style={{ fontSize: 12, background: isHost ? '#fee2e2' : '#f3f4f6', color: isHost ? '#dc2626' : '#4b5563', padding: '4px 8px', borderRadius: '4px', fontWeight: '600' }}>{member.role}</span>
@@ -131,6 +135,18 @@ const CompanionsPage = () => {
           })
         )}
       </div>
+
+      <InviteMemberModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        tripId={selectedTrip?.id}
+        tripTitle={selectedTrip?.title}
+        onMemberAdded={() => {
+          if (selectedTrip) {
+            handleSelectTrip(selectedTrip);
+          }
+        }}
+      />
     </div>
   );
 };

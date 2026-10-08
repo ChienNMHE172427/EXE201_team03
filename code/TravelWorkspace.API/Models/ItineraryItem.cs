@@ -19,5 +19,15 @@ namespace TravelWorkspace.API.Models
         public string Status { get; set; } = "Chưa bắt đầu";
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// true = Hoạt động trong nhà dự phòng thời tiết xấu (Plan B)
+        /// </summary>
+        public bool IsPlanB { get; set; } = false;
+
+        /// <summary>
+        /// ID của hoạt động ngoài trời gốc bị thay thế
+        /// </summary>
+        public int? ReplacesItemId { get; set; }
     }
 }

@@ -22,19 +22,32 @@ builder.Services.AddScoped<IExpenseService, ExpenseService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IGeminiService, GeminiService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+builder.Services.Configure<TravelWorkspace.API.Models.SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173", "http://localhost:3000" };
 
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000") // React default ports
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
-var tokenKey = builder.Configuration.GetSection("AppSettings:Token").Value ?? "this is my custom Secret key for authentication very secure indeed yes";
+var jwtKey = builder.Configuration.GetSection("JwtSettings:Key").Value;
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("JWT Key is missing in configuration.");
+}
+
+var jwtIssuer = builder.Configuration.GetSection("JwtSettings:Issuer").Value;
+var jwtAudience = builder.Configuration.GetSection("JwtSettings:Audience").Value;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -42,9 +55,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey)),
-            ValidateIssuer = false,
-            ValidateAudience = false
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer = !string.IsNullOrWhiteSpace(jwtIssuer),
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = !string.IsNullOrWhiteSpace(jwtAudience),
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -78,9 +95,14 @@ using (var scope = app.Services.CreateScope())
         });
         context.SaveChanges();
     }
+
+    // Tự động chèn 3 chuyến đi mẫu (Template Trips) chất lượng cao
+    await TravelWorkspace.API.Data.TripSeeder.SeedTripsAsync(context);
 }
 
 app.UseCors();
+
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

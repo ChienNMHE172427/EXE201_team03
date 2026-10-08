@@ -64,21 +64,8 @@ const CreateTripPage = () => {
     }
 
     const budget = parseFloat(formData.budget);
-    if (isNaN(budget) || budget <= 0) {
-      setError('Ngân sách phải là số dương.');
-      setLoading(false);
-      return;
-    }
-
-    // Budget Rule Calculation
-    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    const rooms = Math.ceil(participants / 2);
-    
-    // Đã bỏ nhân số người/số phòng với số ngày theo yêu cầu
-    const totalMinBudget = (days * 1000000) + ((participants - 1) * 500000) + ((rooms - 1) * 500000);
-
-    if (budget < totalMinBudget) {
-      setError(`Ngân sách tối thiểu cho chuyến đi này là ${totalMinBudget.toLocaleString('vi-VN')} VNĐ.`);
+    if (isNaN(budget) || budget < 0) {
+      setError('Ngân sách phải là một số hợp lệ và không được âm (>= 0).');
       setLoading(false);
       return;
     }
@@ -96,7 +83,19 @@ const CreateTripPage = () => {
       };
 
       const res = await api.post('/Trip', payload);
-      navigate(`/dashboard`);
+      const newTripId = res.data?.id;
+      if (newTripId) {
+        localStorage.setItem('currentTripId', newTripId);
+        navigate(`/itinerary/${newTripId}`, {
+          state: {
+            justCreated: true,
+            tripId: newTripId,
+            message: 'Tạo chuyến đi thành công! Hãy tham khảo lịch trình mẫu đề xuất bên dưới để tiết kiệm thời gian.'
+          }
+        });
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error(err);
       if (err.response && err.response.data) {
@@ -203,7 +202,7 @@ const CreateTripPage = () => {
           <div className="form-row">
             <div className="form-group">
               <label>NGÂN SÁCH (VNĐ)</label>
-              <input name="budget" type="number" className="form-input" value={formData.budget} onChange={handleInputChange} />
+              <input name="budget" type="number" min="0" className="form-input" value={formData.budget} onChange={handleInputChange} />
             </div>
             <div className="form-group">
               <label>QUY MÔ NHÓM</label>

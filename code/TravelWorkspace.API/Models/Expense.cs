@@ -13,5 +13,12 @@ namespace TravelWorkspace.API.Models
         public string Description { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public DateTime ExpenseDate { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// true = Chi phí cá nhân (Ví riêng), false = Chi phí chung của nhóm (Group Fund)
+        /// </summary>
+        public bool IsPersonal { get; set; } = false;
+
+        public string? ImageUrl { get; set; }
     }
 }

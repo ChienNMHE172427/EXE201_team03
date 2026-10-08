@@ -44,7 +44,10 @@ namespace TravelWorkspace.API.Services
             // Gửi email chào mừng/xác thực
             try
             {
-                var confirmationLink = $"http://localhost:5173/confirm-email?email={user.Email}&token={user.ConfirmationToken}";
+                var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:5173";
+                var encodedEmail = Uri.EscapeDataString(user.Email);
+                var encodedToken = Uri.EscapeDataString(user.ConfirmationToken ?? "");
+                var confirmationLink = $"{clientUrl}/confirm-email?email={encodedEmail}&token={encodedToken}";
                 var subject = "Xác nhận đăng ký - Travel Workspace";
                 var body = $@"
                     <h2>Chào {user.FullName},</h2>
@@ -58,7 +61,7 @@ namespace TravelWorkspace.API.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Không thể gửi email: {ex.Message}");
+                Console.WriteLine($"[LỖI GỬI EMAIL XÁC NHẬN] Gửi tới {user.Email} thất bại: {ex.Message}");
                 // Vẫn tiếp tục luồng vì đã đăng ký thành công
             }
 
@@ -156,15 +159,25 @@ namespace TravelWorkspace.API.Services
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
-            // Using a dummy token for local dev. In production, this should be in secure settings.
-            var tokenKey = _configuration.GetSection("AppSettings:Token").Value ?? "this is my custom Secret key for authentication very secure indeed yes";
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
+            var jwtKey = _configuration.GetSection("JwtSettings:Key").Value;
+            if (string.IsNullOrWhiteSpace(jwtKey))
+            {
+                throw new InvalidOperationException("JWT Key is missing in configuration.");
+            }
+
+            var issuer = _configuration.GetSection("JwtSettings:Issuer").Value;
+            var audience = _configuration.GetSection("JwtSettings:Audience").Value;
+            var expireDays = int.TryParse(_configuration.GetSection("JwtSettings:ExpireDays").Value, out var days) ? days : 7;
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
             
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddDays(7),
+                Expires = DateTime.UtcNow.AddDays(expireDays),
+                Issuer = issuer,
+                Audience = audience,
                 SigningCredentials = creds
             };
 

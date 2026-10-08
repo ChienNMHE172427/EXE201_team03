@@ -10,5 +10,6 @@ namespace TravelWorkspace.API.Models.DTOs
         public decimal Budget { get; set; }
         public int NumberOfParticipants { get; set; }
         public string Preferences { get; set; } = string.Empty;
+        public bool? IsPublic { get; set; }
     }
 }

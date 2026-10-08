@@ -159,11 +159,6 @@
   color: var(--color-primary-dark);
 }
 
-.w-full {
-  width: 100%;
-  padding: 16px;
-  font-size: 16px;
-}
 
 /* Summary Sidebar */
 .summary-title {

@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { getShortLocation } from '../utils/formatLocation';
 import './ExplorePage.css';
+import ReviewSection from '../components/ReviewSection';
+import { MessageSquare, X } from 'lucide-react';
 import MOCK_SERVICES from '../servicesData.json';
 import hotelLinks from '../hotelLinks.json';
 
@@ -21,6 +23,7 @@ const ExplorePage = () => {
   // State modal thông báo
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [targetItemId, setTargetItemId] = useState(null);
+  const [selectedReviewPlace, setSelectedReviewPlace] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -198,13 +201,6 @@ const ExplorePage = () => {
               <div className="step-title">Cộng tác nhóm</div>
             </div>
           </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/documents?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">5</div>
-            <div className="step-info">
-              <div className="step-title">Trạng thái</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -304,6 +300,23 @@ const ExplorePage = () => {
                 >
                   + Thêm vào lịch
                 </button>
+                <button
+                  className="btn-outline w-full"
+                  style={{
+                    marginTop: '8px',
+                    borderColor: '#bae6fd',
+                    color: '#0284c7',
+                    background: '#f0f9ff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    fontWeight: '600'
+                  }}
+                  onClick={() => setSelectedReviewPlace({ id: svc.title, name: svc.title, category: svc.category, desc: svc.desc })}
+                >
+                  <MessageSquare size={15} /> Mẹo & Đánh giá cộng đồng
+                </button>
                 {svc.category === 'Lưu trú' && (
                   <div style={{ marginTop: '12px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
                     <a href={
@@ -349,6 +362,69 @@ const ExplorePage = () => {
                 Xem lịch trình
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {selectedReviewPlace && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '20px'
+          }}
+          onClick={() => setSelectedReviewPlace(null)}
+        >
+          <div
+            className="modal-content"
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '850px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedReviewPlace(null)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b'
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <ReviewSection
+              placeId={selectedReviewPlace.id}
+              placeName={selectedReviewPlace.name}
+            />
           </div>
         </div>
       )}

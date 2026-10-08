@@ -12,6 +12,10 @@ namespace TravelWorkspace.API.Models.DTOs
         public int NumberOfParticipants { get; set; }
         public string Preferences { get; set; } = string.Empty;
         public int OwnerId { get; set; }
+        public bool IsPublic { get; set; }
+        public int CloneCount { get; set; }
+        public string? ImageUrl { get; set; }
+        public ICollection<ItineraryItemDto> ItineraryItems { get; set; } = new List<ItineraryItemDto>();
         public DateTime CreatedAt { get; set; }
     }
 }
