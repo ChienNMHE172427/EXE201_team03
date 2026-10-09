@@ -66,6 +66,48 @@ const PublicTripList = ({
     fetchPublicTrips();
   }, []);
 
+const MOCK_PUBLIC_TRIPS = [
+  {
+    id: 'mock-1',
+    title: 'Khám phá Hà Giang mùa hoa tam giác mạch',
+    destination: 'Hà Giang',
+    origin: 'Hà Nội',
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    budget: 3500000,
+    preferences: 'Thiên nhiên, Chụp ảnh, Khám phá',
+    cloneCount: 1245,
+    isPublic: true,
+    imageUrl: 'https://images.unsplash.com/photo-1628107773229-23f03b2909be?q=80&w=1200&auto=format&fit=crop'
+  },
+  {
+    id: 'mock-2',
+    title: 'Nghỉ dưỡng Sapa - Săn mây Fansipan',
+    destination: 'Sapa',
+    origin: 'Hà Nội',
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    budget: 4200000,
+    preferences: 'Nghỉ dưỡng, Săn mây, Ẩm thực',
+    cloneCount: 890,
+    isPublic: true,
+    imageUrl: 'https://images.unsplash.com/photo-1549474720-333e61f22e86?q=80&w=1200&auto=format&fit=crop'
+  },
+  {
+    id: 'mock-3',
+    title: 'Đà Nẵng - Hội An: Hành trình di sản',
+    destination: 'Đà Nẵng, Hội An',
+    origin: 'TP.HCM',
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+    budget: 6500000,
+    preferences: 'Biển, Di sản, Văn hóa',
+    cloneCount: 2156,
+    isPublic: true,
+    imageUrl: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1200&q=80'
+  }
+];
+
   const fetchPublicTrips = async () => {
     try {
       setLoading(true);
@@ -74,9 +116,15 @@ const PublicTripList = ({
       const publicTrips = (res.data || [])
         .filter(t => t.isPublic === true)
         .sort((a, b) => (b.cloneCount || 0) - (a.cloneCount || 0));
-      setTrips(publicTrips);
+      
+      if (publicTrips.length === 0) {
+        setTrips(MOCK_PUBLIC_TRIPS);
+      } else {
+        setTrips(publicTrips);
+      }
     } catch (err) {
       console.error('Lỗi khi tải lịch trình công khai:', err);
+      setTrips(MOCK_PUBLIC_TRIPS);
     } finally {
       setLoading(false);
     }
