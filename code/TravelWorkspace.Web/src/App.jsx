@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
@@ -41,9 +42,29 @@ const Layout = ({ children }) => {
   );
 };
 
+// Khởi tạo Google Analytics (Chỉ chạy khi có ID)
+const TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID; 
+if (TRACKING_ID) {
+  ReactGA.initialize(TRACKING_ID);
+}
+
+// Component tự động track mỗi khi người dùng chuyển trang
+const RouteTracker = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    if (TRACKING_ID) {
+      ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+    }
+  }, [location]);
+
+  return null;
+};
+
 const App = () => {
   return (
     <Router>
+      <RouteTracker />
       <div className="w-full min-h-screen flex flex-col">
         <Routes>
           {/* Public Routes */}
