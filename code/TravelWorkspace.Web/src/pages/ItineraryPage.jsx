@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
@@ -9,7 +9,7 @@ import TemplateSuggestModal from '../components/TemplateSuggestModal';
 import TemplatePreviewModal from '../components/TemplatePreviewModal';
 import CloneTripModal from '../components/CloneTripModal';
 import TripNavigation from '../components/TripNavigation';
-import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb } from 'lucide-react';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
@@ -1143,12 +1143,12 @@ const ItineraryPage = () => {
                         <div className={`itinerary-card ${item.isPlanB ? 'plan-b' : ''} ${passed ? 'passed' : ''}`}>
                             <div className="itinerary-card-header">
                               <div className="itinerary-time" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                {item.isPlanB && <span title="Hoạt động dự phòng trong nhà (Plan B)">☔</span>}
+                                {item.isPlanB && <span title="Hoạt động dự phòng trong nhà (Plan B)" style={{ display: 'flex', alignItems: 'center' }}><Umbrella size={14}  /></span>}
                                 {new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} 
                                 {item.endTime && item.endTime !== item.startTime ? ` - ${new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}` : ''}
                                 {item.isPlanB && (
                                   <span className="plan-b-badge" style={passed ? { background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' } : {}}>
-                                    ☔ Plan B (Trong nhà)
+                                    <Umbrella size={14} style={{marginRight: 4}} /> Plan B (Trong nhà)
                                   </span>
                                 )}
                               </div>
@@ -1223,7 +1223,7 @@ const ItineraryPage = () => {
                             <h4 className="itinerary-card-title">{formatItemTitle(item.title)}</h4>
                             {item.isPlanB && item.notes && (
                               <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: passed ? '#d2f47d' : '#0369a1', background: passed ? 'rgba(210, 244, 125, 0.1)' : '#f0f9ff', padding: '6px 10px', borderRadius: 8, border: passed ? '1px solid rgba(210, 244, 125, 0.2)' : '1px solid #e0f2fe' }}>
-                                💡 <b>Phương án Plan B:</b> {item.notes}
+                                <Lightbulb size={16} style={{marginRight: 4, flexShrink: 0, marginTop: 2, color: "inherit"}} /> <b>Phương án Plan B:</b> {item.notes}
                               </p>
                             )}
                           </div>

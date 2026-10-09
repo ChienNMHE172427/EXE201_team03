@@ -88,12 +88,7 @@ const TemplateSuggestModal = ({
     return { matchedTemplates: matched, otherTemplates: others };
   }, [templates, currentTrip]);
 
-  // Tự động chuyển tab nếu không có template khớp
-  useEffect(() => {
-    if (!loading && matchedTemplates.length === 0 && activeTab === 'matched') {
-      setActiveTab('all');
-    }
-  }, [matchedTemplates.length, loading]);
+
 
   // Lọc theo search query
   const displayedTemplates = useMemo(() => {
