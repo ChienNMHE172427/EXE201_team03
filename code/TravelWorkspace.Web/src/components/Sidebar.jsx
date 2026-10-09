@@ -42,7 +42,7 @@ const Sidebar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('currentTripId');
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   const getAvatarUrl = (url) => {
@@ -69,21 +69,33 @@ const Sidebar = () => {
       </div>
 
       <div className="sidebar-nav" style={{ flex: 1 }}>
-        <NavLink to="/explore" onClick={(e) => handleNavClick(e, '/explore')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          🔥 Template Lịch trình
-        </NavLink>
         <NavLink to="/dashboard" onClick={(e) => handleNavClick(e, '/dashboard')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Chuyến đi của tôi
         </NavLink>
+
+        <NavLink to="/create-trip" onClick={(e) => handleNavClick(e, '/create-trip')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Tạo chuyến đi
+        </NavLink>
+
+        <NavLink to="/itinerary" onClick={(e) => handleNavClick(e, '/itinerary')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Lịch trình
+        </NavLink>
+
+        <NavLink to="/budget" onClick={(e) => handleNavClick(e, '/budget')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Chi phí nhóm
+        </NavLink>
+
+        <NavLink to="/collaborate" onClick={(e) => handleNavClick(e, '/collaborate')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Cộng tác nhóm
+        </NavLink>
+
         <NavLink 
-          to="/invitations" 
-          onClick={(e) => handleNavClick(e, '/invitations')} 
+          to="/companions" 
+          onClick={(e) => handleNavClick(e, '/companions')} 
           className={({isActive}) => isActive ? "nav-item active" : "nav-item"}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🔔</span> Lời mời chuyến đi
-          </span>
+          <span>Bạn đồng hành</span>
           {pendingCount > 0 && (
             <span style={{ 
               backgroundColor: '#ef4444', 
@@ -98,26 +110,13 @@ const Sidebar = () => {
             </span>
           )}
         </NavLink>
-        <NavLink to="/create-trip" onClick={(e) => handleNavClick(e, '/create-trip')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Tạo chuyến đi
-        </NavLink>
-        <NavLink to="/itinerary" onClick={(e) => handleNavClick(e, '/itinerary')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Lịch trình
-        </NavLink>
-        <NavLink to="/budget" onClick={(e) => handleNavClick(e, '/budget')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Chi phí nhóm
-        </NavLink>
-        <NavLink to="/collaborate" onClick={(e) => handleNavClick(e, '/collaborate')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Cộng tác nhóm
-        </NavLink>
+
         <NavLink to="/packing" onClick={(e) => handleNavClick(e, '/packing')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Hành lý thông minh
+          Hành lý
         </NavLink>
+
         <NavLink to="/gallery" onClick={(e) => handleNavClick(e, '/gallery')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Kho ảnh chung
-        </NavLink>
-        <NavLink to="/companions" onClick={(e) => handleNavClick(e, '/companions')} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-          Bạn đồng hành
         </NavLink>
       </div>
 

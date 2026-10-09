@@ -23,8 +23,83 @@ export default function HomePage() {
     setIsLoggedIn(!!token);
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    setIsLoggedIn(false);
+  };
+
   return (
-    <div className="home-page w-full min-h-screen">
+    <div className="home-page w-full min-h-screen" style={{ paddingTop: '64px' }}>
+      <header style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '16px 40px', 
+        background: '#0d2825', 
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 1000
+      }}>
+        <div style={{ color: '#fff', fontSize: '20px', fontWeight: 'bold' }}>
+          Travel Workspace
+        </div>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          {!isLoggedIn ? (
+            <>
+              <Link to="/login" style={{ color: '#fff', textDecoration: 'none', padding: '8px 16px', fontWeight: '500' }}>
+                Đăng nhập
+              </Link>
+              <Link to="/register" style={{ 
+                background: '#e4f874', 
+                color: '#0d2825', 
+                textDecoration: 'none', 
+                padding: '8px 16px', 
+                borderRadius: '6px', 
+                fontWeight: 'bold' 
+              }}>
+                Đăng ký
+              </Link>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => navigate('/dashboard')}
+                style={{ 
+                  background: '#e4f874', 
+                  color: '#0d2825', 
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px 16px', 
+                  borderRadius: '6px', 
+                  fontWeight: 'bold',
+                  fontSize: '14px'
+                }}>
+                Vào Workspace
+              </button>
+              <button 
+                onClick={handleLogout}
+                style={{ 
+                  background: 'transparent', 
+                  color: '#fff', 
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  cursor: 'pointer',
+                  padding: '8px 16px', 
+                  borderRadius: '6px', 
+                  fontWeight: '500',
+                  fontSize: '14px'
+                }}>
+                Đăng xuất
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="home-hero w-full">
         <div className="home-hero-inner">
@@ -99,7 +174,7 @@ export default function HomePage() {
 
       {/* Main Public Feed Section */}
       <main className="home-main w-full" id="public-feed-section">
-        <PublicTripList />
+        <PublicTripList requireAuth={true} />
       </main>
 
       {/* Footer */}

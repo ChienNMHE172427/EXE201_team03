@@ -278,7 +278,7 @@ const ExploreServiceDrawer = ({
 
           {filteredServices.length === 0 ? (
             <div className="drawer-empty-state">
-              <div className="drawer-empty-icon">🔍</div>
+              <div className="drawer-empty-icon" style={{color: "#94a3b8"}}><Search size={32} /></div>
               <h4 className="drawer-empty-title">Không tìm thấy dịch vụ phù hợp</h4>
               <p className="drawer-empty-desc">
                 Không có dịch vụ nào khớp với từ khóa "{searchQuery}". Bạn có thể xóa từ khóa để xem toàn bộ dịch vụ.

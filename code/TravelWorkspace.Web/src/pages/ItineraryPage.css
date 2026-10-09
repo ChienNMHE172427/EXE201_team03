@@ -722,23 +722,25 @@
 
 /* Passed / Completed Activity Progress Styles (Giai đoạn 1.1 - SaaS UI Redesign) */
 .itinerary-card.passed {
-  opacity: 0.85;
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  background: #122B29;
+  border-color: #d2f47d;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.25s ease;
 }
 
-.itinerary-card.passed.collapsed {
-  padding: 10px 16px;
-  gap: 6px;
+.itinerary-card.passed:hover {
+  background: #1a423f;
+  border-color: #d2f47d;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
-.itinerary-card.passed:hover {
-  opacity: 1;
-  background: #ffffff;
-  border-color: #cbd5e1;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+.itinerary-card.passed .itinerary-time {
+  color: #e2e8f0;
+}
+
+.itinerary-card.passed .itinerary-card-title {
+  color: #ffffff;
 }
 
 .itinerary-card.passed .btn-delete-icon.disabled {
@@ -993,9 +995,9 @@
   font-size: 12px;
   font-weight: 600;
   border-radius: 8px;
-  border: 1px solid #0d9488;
-  background: #0d9488;
-  color: #ffffff;
+  border: 1px solid #d2f47d;
+  background: #d2f47d;
+  color: #122B29;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1004,16 +1006,15 @@
 }
 
 .btn-food-add:hover:not(:disabled) {
-  background: #0f766e;
-  border-color: #0f766e;
+  background: #c5ea6a;
+  border-color: #c5ea6a;
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3);
 }
 
 .btn-food-add.added {
-  background: #ecfdf5;
-  color: #059669;
-  border-color: #a7f3d0;
+  background: #f8fafc;
+  color: #122B29;
+  border-color: #cbd5e1;
   cursor: default;
 }
 
@@ -1027,9 +1028,9 @@
   font-size: 12px;
   font-weight: 600;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #334155;
+  border: 1px solid #cbd5e1;
+  background: transparent;
+  color: #122B29;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1040,19 +1041,16 @@
 
 .btn-food-action:hover {
   background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #0f172a;
 }
 
 .btn-food-action.focus-map {
-  background: #fff7ed;
-  color: #c2410c;
-  border-color: #ffedd5;
+  background: transparent;
+  color: #122B29;
+  border-color: #cbd5e1;
 }
 
 .btn-food-action.focus-map:hover {
-  background: #ffedd5;
-  color: #9a3412;
+  background: #f1f5f9;
 }
 
 /* Tabs: Địa điểm thực tế vs AI */
@@ -1097,10 +1095,9 @@
 }
 
 .food-explorer-tab.active {
-  background: #0284c7;
-  border-color: #0284c7;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+  background: #d2f47d;
+  border-color: #d2f47d;
+  color: #122B29;
 }
 
 .tab-count-badge {
@@ -1327,11 +1324,10 @@
 }
 
 .food-map-chip.active {
-  background: #0284c7;
-  border-color: #0284c7;
-  color: #ffffff;
+  background: #d2f47d;
+  border-color: #d2f47d;
+  color: #122B29;
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.25);
 }
 
 .food-map-panel-bar {

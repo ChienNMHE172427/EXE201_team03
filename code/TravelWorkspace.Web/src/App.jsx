@@ -30,15 +30,11 @@ import InvitationsPage from './pages/InvitationsPage';
 const Layout = ({ children }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const isExploreRoute = location.pathname === '/explore';
 
   return (
     <div className="app-layout">
       {isAdminRoute ? <AdminSidebar /> : <Sidebar />}
-      <div 
-        className={`main-content ${isExploreRoute ? 'main-content-explore' : ''}`}
-        style={isExploreRoute ? { padding: 0 } : undefined}
-      >
+      <div className="main-content">
         {children}
       </div>
     </div>
@@ -51,6 +47,7 @@ const App = () => {
       <div className="w-full min-h-screen flex flex-col">
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/confirm-email" element={<ConfirmEmailPage />} />
@@ -66,10 +63,8 @@ const App = () => {
 
           {/* Traveler Routes (Protected) */}
           <Route element={<PrivateRoute />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
             <Route path="/create-trip" element={<Layout><CreateTripPage /></Layout>} />
-            <Route path="/explore" element={<Layout><HomePage /></Layout>} />
             <Route path="/invitations" element={<Layout><InvitationsPage /></Layout>} />
             <Route path="/companions" element={<Layout><CompanionsPage /></Layout>} />
             <Route path="/documents" element={<Navigate to="/itinerary" replace />} />

@@ -8,7 +8,8 @@ import InviteMemberModal from '../components/InviteMemberModal';
 import TemplateSuggestModal from '../components/TemplateSuggestModal';
 import TemplatePreviewModal from '../components/TemplatePreviewModal';
 import CloneTripModal from '../components/CloneTripModal';
-import { UserPlus, Sparkles, Flame, Layers, Eye } from 'lucide-react';
+import TripNavigation from '../components/TripNavigation';
+import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
@@ -255,14 +256,31 @@ const ItineraryPage = () => {
     setSearchPoiError(null);
     try {
       const fullQuery = `${kw} ${baseLocation || ''}`.trim();
-      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&q=${encodeURIComponent(fullQuery)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&countrycodes=vn&q=${encodeURIComponent(fullQuery)}`;
       const res = await fetch(url, {
         headers: {
           'Accept-Language': 'vi,en'
         }
       });
       if (!res.ok) throw new Error('Không thể kết nối Nominatim OSM');
-      const data = await res.json();
+      let data = await res.json();
+      
+      // Fallback search: if no results found, search just the baseLocation (so map centers correctly)
+      if ((!data || data.length === 0) && kw && baseLocation && kw !== baseLocation) {
+        const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&countrycodes=vn&q=${encodeURIComponent(baseLocation)}`;
+        const fallbackRes = await fetch(fallbackUrl, {
+          headers: {
+            'Accept-Language': 'vi,en'
+          }
+        });
+        if (fallbackRes.ok) {
+           const fallbackData = await fallbackRes.json();
+           if (fallbackData && fallbackData.length > 0) {
+             data = fallbackData;
+           }
+        }
+      }
+
       setSearchResults(data || []);
     } catch (err) {
       console.warn('Lỗi gọi Nominatim OSM:', err);
@@ -307,11 +325,11 @@ const ItineraryPage = () => {
   };
 
   // Hàm mở Modal Ẩm thực và kích hoạt cả 3 luồng (OSM, AI, Google Maps)
-  const handleOpenFoodModal = (item) => {
+  const handleOpenFoodModal = (item, category = 'food') => {
     const targetQuery = item.location || item.destination || (trip?.destination ? `${item.title}, ${trip.destination}` : item.title);
     const formattedTitle = formatItemTitle(item.title);
     
-    setMapQuery('restaurants');
+    setMapQuery(category === 'food' ? 'restaurants' : category === 'hotel' ? 'hotels' : 'transit station');
     setMapSearchInput('');
     setActiveFoodTab('real');
 
@@ -320,26 +338,30 @@ const ItineraryPage = () => {
       query: targetQuery,
       title: formattedTitle,
       activityItem: item,
+      category: category,
       aiSuggestions: [],
       loadingAi: true,
       errorAi: null,
       currentKeyword: ''
     });
 
+    const defaultSearchKeyword = category === 'hotel' ? 'khách sạn' : category === 'transport' ? 'bến xe' : 'quán ăn';
     fetchAISuggestions('', targetQuery);
-    fetchRealPoiSuggestions('quán ăn', targetQuery);
+    fetchRealPoiSuggestions(defaultSearchKeyword, targetQuery);
   };
 
   // Thực thi tìm kiếm đồng bộ khi người dùng Enter hoặc click Thẻ lọc nhanh
   const handlePerformSearch = (keyword) => {
     const trimmed = (keyword || '').trim();
-    const queryForMap = trimmed || 'restaurants';
+    const defaultMapQuery = foodMapModal.category === 'hotel' ? 'hotels' : foodMapModal.category === 'transport' ? 'transit station' : 'restaurants';
+    const queryForMap = trimmed || defaultMapQuery;
 
     // Luồng 1 (Tức thì): Cập nhật URL bản đồ iframe Google Maps sang từ khóa mới
     setMapQuery(queryForMap);
 
     // Luồng 2 (Nominatim): Tìm kiếm địa điểm thật
-    fetchRealPoiSuggestions(trimmed || 'quán ăn', foodMapModal.query);
+    const defaultSearchKeyword = foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn';
+    fetchRealPoiSuggestions(trimmed || defaultSearchKeyword, foodMapModal.query);
 
     // Luồng 3 (AI): Lấy gợi ý phân tích từ Gemini
     fetchAISuggestions(trimmed, foodMapModal.query);
@@ -352,7 +374,7 @@ const ItineraryPage = () => {
       return;
     }
 
-    const placeName = placeItem.name || placeItem.title || (placeItem.display_name ? placeItem.display_name.split(',')[0].trim() : 'Quán ăn');
+    const placeName = placeItem.name || placeItem.title || (placeItem.display_name ? placeItem.display_name.split(',')[0].trim() : (foodMapModal.category === 'hotel' ? 'Khách sạn' : foodMapModal.category === 'transport' ? 'Trạm xe' : 'Quán ăn'));
     const placeAddress = placeItem.display_name || placeItem.location || placeItem.address || foodMapModal.query;
     const placeSpecialty = placeItem.specialty || (placeItem.type ? `Loại hình: ${placeItem.type}` : 'Ăn uống & Ẩm thực');
     const placeNotes = placeItem.reason || (placeItem.display_name ? `Địa chỉ: ${placeItem.display_name}` : '');
@@ -766,102 +788,12 @@ const ItineraryPage = () => {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => setShowTemplateModal(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: '#122B29',
-              color: '#d2f47d',
-              border: '1.5px solid rgba(210, 244, 125, 0.6)',
-              padding: '10px 18px',
-              borderRadius: '12px',
-              fontWeight: '700',
-              fontSize: '14px',
-              boxShadow: '0 4px 14px rgba(18, 43, 41, 0.25)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#1a423f';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 18px rgba(18, 43, 41, 0.35)';
-              e.currentTarget.style.borderColor = '#d2f47d';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#122B29';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(18, 43, 41, 0.25)';
-              e.currentTarget.style.borderColor = 'rgba(210, 244, 125, 0.6)';
-            }}
-          >
-            <Sparkles size={17} color="#d2f47d" strokeWidth={2.4} />
-            <span>Template lịch trình mẫu</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowInviteModal(true)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: '#1E6B65',
-              color: '#FFFFFF',
-              padding: '10px 20px',
-              borderRadius: '12px',
-              fontWeight: '600',
-              fontSize: '14px',
-              boxShadow: '0 4px 14px rgba(30, 107, 101, 0.3)',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#122B29';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 18px rgba(18, 43, 41, 0.35)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#1E6B65';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(30, 107, 101, 0.3)';
-            }}
-          >
-            <UserPlus size={18} color="#FFFFFF" strokeWidth={2.2} />
-            <span style={{ color: '#FFFFFF', fontWeight: '600', fontSize: '14px' }}>Mời thành viên</span>
-          </button>
         </div>
       </div>
 
       {/* Removed page-header to save space */}
 
-      <div className="wizard-steps-container">
-        <div className="wizard-steps">
-          <div className="step active">
-            <div className="step-circle">1</div>
-            <div className="step-info">
-              <div className="step-title">Lịch trình</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTripId}`)}>
-            <div className="step-circle">2</div>
-            <div className="step-info">
-              <div className="step-title">Chi phí nhóm</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/collaborate?tripId=${selectedTripId}`)}>
-            <div className="step-circle">3</div>
-            <div className="step-info">
-              <div className="step-title">Cộng tác nhóm</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TripNavigation selectedTripId={selectedTripId} />
 
 
       {showAddForm && (
@@ -942,8 +874,8 @@ const ItineraryPage = () => {
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-                  <button className="btn-explore-sm" onClick={handleGenerateAi} disabled={isChatting}>
-                    🔄 Tạo mới toàn bộ lịch trình
+                  <button className="btn-explore-sm" onClick={handleGenerateAi} disabled={isChatting} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <RefreshCw size={14} /> Tạo mới toàn bộ lịch trình
                   </button>
                 </div>
               </div>
@@ -1137,25 +1069,60 @@ const ItineraryPage = () => {
                         Ngày: {date}
                       </div>
                     </div>
-                    <div className="timeline-date-right">
-                      {/* TOGGLE SWITCH NỔI BẬT: 🌧️ Kích hoạt Plan B (Thời tiết xấu) */}
+                    <div className="timeline-date-right" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      {/* TOGGLE SWITCH NỔI BẬT: Kích hoạt Kế hoạch B */}
                       <button
                         type="button"
                         className={`plan-b-toggle-btn ${isPlanBActive ? 'active' : ''}`}
                         onClick={() => handleTogglePlanB(date, dayItems)}
                         disabled={isGenerating}
-                        title="Kích hoạt phương án thay thế hoạt động trong nhà khi thời tiết xấu"
+                        title="Kích hoạt phương án thay thế hoạt động trong nhà"
                       >
-                        <span>{isPlanBActive ? '☔' : '🌧️'}</span>
-                        <span>{isPlanBActive ? 'Đang bật Plan B (Thời tiết xấu)' : '🌧️ Kích hoạt Plan B (Thời tiết xấu)'}</span>
+                        <span style={{marginRight: 4}}><CloudRain size={16}/></span>
+                        <span>{isPlanBActive ? 'Đang bật Kế hoạch B' : 'Kế hoạch B'}</span>
                         <div className="plan-b-switch-pill">
                           <div className="plan-b-switch-thumb"></div>
                         </div>
                         {isGenerating && <span style={{ fontSize: '11px', color: '#0284c7', marginLeft: 4 }}>Đang tạo...</span>}
                       </button>
 
-                      <button className="btn-add-activity" onClick={() => setShowAddForm(true)}>
-                        + Thêm Hoạt động
+                      <button
+                        type="button"
+                        onClick={() => setShowTemplateModal(true)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          backgroundColor: '#122B29',
+                          color: '#d2f47d',
+                          border: '1.5px solid rgba(210, 244, 125, 0.6)',
+                          padding: '10px 18px',
+                          borderRadius: '12px',
+                          fontWeight: '700',
+                          fontSize: '14px',
+                          boxShadow: '0 4px 14px rgba(18, 43, 41, 0.25)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#1a423f';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 6px 18px rgba(18, 43, 41, 0.35)';
+                          e.currentTarget.style.borderColor = '#d2f47d';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#122B29';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 14px rgba(18, 43, 41, 0.25)';
+                          e.currentTarget.style.borderColor = 'rgba(210, 244, 125, 0.6)';
+                        }}
+                      >
+                        <Sparkles size={17} color="#d2f47d" strokeWidth={2.4} />
+                        <span>Template lịch trình mẫu</span>
+                      </button>
+
+                      <button className="btn-add-activity" onClick={() => setShowAddForm(true)} title="Thêm Hoạt động mới" style={{ padding: '8px', minWidth: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <Plus size={20} strokeWidth={2.5} />
                       </button>
                     </div>
                   </div>
@@ -1163,8 +1130,6 @@ const ItineraryPage = () => {
                 <div className="timeline-list">
                   {displayedItems.map((item, index) => {
                     const passed = isItemPassed(item);
-                    // Mặc định: các thẻ hoạt động trong quá khứ bị thu gọn (collapsed), chỉ mở rộng khi user click Chevron
-                    const isExpanded = passed ? !!expandedPassedItems[item.id] : true;
 
                     return (
                       <div key={item.id} className={`timeline-item ${passed ? 'passed' : ''}`}>
@@ -1172,22 +1137,17 @@ const ItineraryPage = () => {
                           className="timeline-dot" 
                           style={{
                             ...(item.isPlanB ? { background: '#0284c7', borderColor: '#e0f2fe' } : {}),
-                            ...(passed ? { background: '#94a3b8', borderColor: '#e2e8f0', boxShadow: 'none' } : {})
+                            ...(passed ? { background: '#122B29', borderColor: '#d2f47d', boxShadow: 'none' } : {})
                           }}
                         ></div>
-                        <div className={`itinerary-card ${item.isPlanB ? 'plan-b' : ''} ${passed ? 'passed opacity-80 bg-slate-50' : ''} ${passed && !isExpanded ? 'collapsed' : ''}`}>
+                        <div className={`itinerary-card ${item.isPlanB ? 'plan-b' : ''} ${passed ? 'passed' : ''}`}>
                             <div className="itinerary-card-header">
                               <div className="itinerary-time" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                {passed && (
-                                  <span className="passed-badge" title="Hoạt động đã kết thúc hoặc được đánh dấu hoàn thành">
-                                    ✅ Đã qua
-                                  </span>
-                                )}
                                 {item.isPlanB && <span title="Hoạt động dự phòng trong nhà (Plan B)">☔</span>}
                                 {new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} 
                                 {item.endTime && item.endTime !== item.startTime ? ` - ${new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}` : ''}
                                 {item.isPlanB && (
-                                  <span className="plan-b-badge">
+                                  <span className="plan-b-badge" style={passed ? { background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' } : {}}>
                                     ☔ Plan B (Trong nhà)
                                   </span>
                                 )}
@@ -1198,13 +1158,13 @@ const ItineraryPage = () => {
                                 {passed ? (
                                   <span 
                                     style={{ 
-                                      padding: '4px 10px', 
+                                      padding: '4px 12px', 
                                       fontSize: '12px', 
                                       borderRadius: '6px', 
-                                      background: '#ecfdf5', 
-                                      color: '#059669', 
-                                      border: '1px solid #a7f3d0',
-                                      fontWeight: '600',
+                                      background: '#d2f47d', 
+                                      color: '#122B29', 
+                                      border: 'none',
+                                      fontWeight: '700',
                                       display: 'inline-flex',
                                       alignItems: 'center',
                                       gap: '4px',
@@ -1212,21 +1172,9 @@ const ItineraryPage = () => {
                                     }}
                                     title="Hoạt động đã kết thúc trong quá khứ hoặc đã hoàn thành"
                                   >
-                                    ✅ Đã hoàn thành
+                                    <Check size={14} strokeWidth={3} /> Đã hoàn thành
                                   </span>
-                                ) : (
-                                  <button 
-                                    className={(!item.status || item.status === 'Chưa bắt đầu') ? 'btn-primary' : 'btn-secondary'} 
-                                    style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '4px' }}
-                                    onClick={async () => {
-                                      if (!item.status || item.status === 'Chưa bắt đầu') {
-                                        await updateItemStatus(item, 'Đã chuẩn bị');
-                                      }
-                                    }}
-                                  >
-                                    {(!item.status || item.status === 'Chưa bắt đầu') ? 'Lưu' : 'Đã lưu'}
-                                  </button>
-                                )}
+                                ) : null}
 
                                 {/* Nút Hỏi AI: Cho phép tương tác khi chưa qua */}
                                 {!passed && (
@@ -1248,6 +1196,7 @@ const ItineraryPage = () => {
                                 {/* Nút Xem thông tin chi tiết: LUÔN CHO PHÉP BẤM NGAY CẢ KHI ĐÃ QUA */}
                                 <button 
                                   className="btn-action-icon btn-info" 
+                                  style={passed ? { color: '#fff', borderColor: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)' } : {}}
                                   onClick={() => {
                                     setSelectedInfoItem(item);
                                   }}
@@ -1259,101 +1208,53 @@ const ItineraryPage = () => {
                                 {/* Selective Disabling 2: Nút Xóa (Khóa khi hoạt động đã qua trong quá khứ) */}
                                 <button 
                                   className={`btn-delete-icon ${passed ? 'disabled' : ''}`} 
+                                  style={passed ? { color: '#fff', borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' } : {}}
                                   onClick={() => !passed && handleDelete(item.id)} 
                                   disabled={passed}
                                   title={passed ? "Không thể xóa hoạt động trong quá khứ" : "Xóa"}
                                 >
                                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
-
-                                {/* Nút Accordion Chevron: Mở rộng / Thu gọn cho các thẻ đã qua */}
-                                {passed && (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleExpandItem(item.id)}
-                                    className="btn-collapse-toggle"
-                                    style={{
-                                      background: isExpanded ? '#e2e8f0' : '#f1f5f9',
-                                      border: '1px solid #cbd5e1',
-                                      borderRadius: '6px',
-                                      padding: '4px 8px',
-                                      cursor: 'pointer',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      color: '#475569',
-                                      fontSize: '12px',
-                                      fontWeight: '600',
-                                      transition: 'all 0.2s',
-                                      marginLeft: '2px'
-                                    }}
-                                    title={isExpanded ? "Thu gọn hoạt động" : "Mở rộng để xem bản đồ & dịch vụ"}
-                                  >
-                                    <span>{isExpanded ? "Thu gọn" : "Chi tiết"}</span>
-                                    <svg 
-                                      width="14" 
-                                      height="14" 
-                                      viewBox="0 0 24 24" 
-                                      fill="none" 
-                                      stroke="currentColor" 
-                                      strokeWidth="2.5" 
-                                      strokeLinecap="round" 
-                                      strokeLinejoin="round"
-                                      style={{ 
-                                        transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                        transition: 'transform 0.25s ease'
-                                      }}
-                                    >
-                                      <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                  </button>
-                                )}
                               </div>
                             </div>
 
                           {/* Tiêu đề & Plan B Notes */}
-                          <div className="itinerary-card-body" style={passed && !isExpanded ? { padding: 0 } : {}}>
+                          <div className="itinerary-card-body">
                             <h4 className="itinerary-card-title">{formatItemTitle(item.title)}</h4>
-                            {(!passed || isExpanded) && item.isPlanB && item.notes && (
-                              <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#0369a1', background: '#f0f9ff', padding: '6px 10px', borderRadius: 8, border: '1px solid #e0f2fe' }}>
+                            {item.isPlanB && item.notes && (
+                              <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: passed ? '#d2f47d' : '#0369a1', background: passed ? 'rgba(210, 244, 125, 0.1)' : '#f0f9ff', padding: '6px 10px', borderRadius: 8, border: passed ? '1px solid rgba(210, 244, 125, 0.2)' : '1px solid #e0f2fe' }}>
                                 💡 <b>Phương án Plan B:</b> {item.notes}
                               </p>
                             )}
                           </div>
 
                           {/* Footer Bản đồ & Khám phá dịch vụ: Mở rộng khi chưa qua HOẶC khi đã click Chevron */}
-                          {(!passed || isExpanded) && (
+                          {!passed && (
                             <div className="itinerary-card-footer">
                               <div className="itinerary-services">
-                                {item.location && (
-                                  <button className="service-btn map-btn" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${getMapQuery(item)}`, '_blank')}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                    Bản đồ
-                                  </button>
-                                )}
                                 <button 
                                   className="service-btn" 
-                                  onClick={() => handleOpenFoodModal(item)}
+                                  onClick={() => handleOpenFoodModal(item, 'food')}
                                   title="Khám phá ẩm thực & nhà hàng do AI gợi ý quanh khu vực này"
                                 >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>
+                                  <Utensils size={16} />
                                   Khám phá ẩm thực
                                 </button>
                                 <button 
                                   className="service-btn" 
-                                  onClick={() => setExploreData({ isOpen: true, activity: { ...item, defaultCategory: 'Lưu trú', tripId: selectedTripId } })}
+                                  onClick={() => handleOpenFoodModal(item, 'hotel')}
                                   title="Tìm kiếm khách sạn & nơi lưu trú"
                                 >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+                                  <Building size={16} />
                                   Tìm khách sạn
                                 </button>
                                 <button 
                                   className="service-btn" 
-                                  onClick={() => setExploreData({ isOpen: true, activity: { ...item, defaultCategory: 'Di chuyển', tripId: selectedTripId } })}
-                                  title="Gợi ý phương tiện & đối tác di chuyển"
+                                  onClick={() => handleOpenFoodModal(item, 'transport')}
+                                  title="Tìm kiếm phương tiện di chuyển"
                                 >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v9c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>
-                                  Gợi ý đối tác
+                                  <Bus size={16} />
+                                  Di chuyển
                                 </button>
                               </div>
                             </div>
@@ -1444,7 +1345,7 @@ const ItineraryPage = () => {
             <div className="food-map-modal-header">
               <div className="food-map-modal-title-group">
                 <h3 className="food-map-modal-title">
-                  <span>🍽️</span> Quán ăn & Ẩm thực xung quanh
+                  {foodMapModal.category === 'hotel' ? <><Building size={20} style={{marginRight: 6}} /> Tìm khách sạn</> : foodMapModal.category === 'transport' ? <><Bus size={20} style={{marginRight: 6}} /> Di chuyển</> : <><Utensils size={20} style={{marginRight: 6}} /> Khám phá ẩm thực & nhà hàng</>}
                 </h3>
                 <p className="food-map-modal-subtitle">
                   Chặng: <strong>{foodMapModal.title || 'Lịch trình'}</strong> • Khu vực: <em>{foodMapModal.query}</em>
@@ -1476,7 +1377,7 @@ const ItineraryPage = () => {
                       handlePerformSearch(mapSearchInput);
                     }}
                   >
-                    <span className="food-map-search-icon">🔍</span>
+                    <Search className="food-map-search-icon" size={16} />
                     <input
                       type="text"
                       className="food-map-search-input"
@@ -1488,7 +1389,7 @@ const ItineraryPage = () => {
                           handlePerformSearch(mapSearchInput);
                         }
                       }}
-                      placeholder="🔍 Gõ tìm quán ăn, cafe, siêu thị thực tế quanh đây..."
+                      placeholder={`Gõ tìm ${foodMapModal.category === 'hotel' ? 'khách sạn, homestay' : foodMapModal.category === 'transport' ? 'bến xe, ga tàu' : 'quán ăn, cafe, siêu thị'} thực tế quanh đây...`}
                     />
                     {mapSearchInput && (
                       <button 
@@ -1496,7 +1397,7 @@ const ItineraryPage = () => {
                         className="food-map-search-clear"
                         onClick={() => {
                           setMapSearchInput('');
-                          handlePerformSearch('restaurants');
+                          handlePerformSearch('');
                         }}
                         title="Xóa tìm kiếm"
                       >
@@ -1509,19 +1410,28 @@ const ItineraryPage = () => {
                   </form>
 
                   <div className="food-map-chips-row">
-                    {[
-                      { id: 'all', label: '🍽️ Quán ăn', query: 'restaurants', aiKeyword: '' },
-                      { id: 'cafe', label: '☕ Cafe', query: 'cafe', aiKeyword: 'quán cafe' },
-                      { id: 'veggie', label: '🥗 Đồ chay', query: 'đồ chay', aiKeyword: 'quán chay' },
-                      { id: 'bar', label: '🍻 Quán nhậu', query: 'quán nhậu', aiKeyword: 'quán nhậu' },
-                      { id: 'mart', label: '🛒 Cửa hàng tiện lợi', query: 'cửa hàng tiện lợi', aiKeyword: 'cửa hàng tiện lợi' }
-                    ].map(chip => (
+                    {(foodMapModal.category === 'hotel' ? [
+                      { id: 'all_hotels', label: <><Building size={14} style={{marginRight: 4}} /> Khách sạn</>, query: 'hotels', aiKeyword: '' },
+                      { id: 'resort', label: <><Map size={14} style={{marginRight: 4}} /> Resort</>, query: 'resort', aiKeyword: 'resort' },
+                      { id: 'homestay', label: <><MapPin size={14} style={{marginRight: 4}} /> Homestay</>, query: 'homestay', aiKeyword: 'homestay' },
+                      { id: 'motel', label: <><Building size={14} style={{marginRight: 4}} /> Nhà nghỉ</>, query: 'nhà nghỉ', aiKeyword: 'nhà nghỉ' }
+                    ] : foodMapModal.category === 'transport' ? [
+                      { id: 'all_transit', label: <><Bus size={14} style={{marginRight: 4}} /> Bến xe</>, query: 'transit station', aiKeyword: '' },
+                      { id: 'train', label: <><Map size={14} style={{marginRight: 4}} /> Ga tàu</>, query: 'train station', aiKeyword: 'ga tàu' },
+                      { id: 'airport', label: <><MapPin size={14} style={{marginRight: 4}} /> Sân bay</>, query: 'airport', aiKeyword: 'sân bay' }
+                    ] : [
+                      { id: 'all', label: <><Utensils size={14} style={{marginRight: 4}} /> Quán ăn</>, query: 'restaurants', aiKeyword: '' },
+                      { id: 'cafe', label: <><Coffee size={14} style={{marginRight: 4}} /> Cafe</>, query: 'cafe', aiKeyword: 'quán cafe' },
+                      { id: 'veggie', label: <><Leaf size={14} style={{marginRight: 4}} /> Đồ chay</>, query: 'đồ chay', aiKeyword: 'quán chay' },
+                      { id: 'bar', label: <><Beer size={14} style={{marginRight: 4}} /> Quán nhậu</>, query: 'quán nhậu', aiKeyword: 'quán nhậu' },
+                      { id: 'mart', label: <><ShoppingCart size={14} style={{marginRight: 4}} /> Cửa hàng tiện lợi</>, query: 'cửa hàng tiện lợi', aiKeyword: 'cửa hàng tiện lợi' }
+                    ]).map(chip => (
                       <button
                         key={chip.id}
                         type="button"
                         className={`food-map-chip ${mapQuery === chip.query ? 'active' : ''}`}
                         onClick={() => {
-                          setMapSearchInput(chip.query === 'restaurants' ? '' : chip.label);
+                          setMapSearchInput((chip.query === 'restaurants' || chip.query === 'hotels' || chip.query === 'transit station') ? '' : chip.label);
                           handlePerformSearch(chip.query);
                         }}
                       >
@@ -1531,32 +1441,14 @@ const ItineraryPage = () => {
                   </div>
                 </div>
 
-                {/* 2. Bộ chuyển Tab: Thực tế (OSM) vs AI (Gemini) */}
-                <div className="food-explorer-tabs">
-                  <button
-                    type="button"
-                    className={`food-explorer-tab ${activeFoodTab === 'real' ? 'active' : ''}`}
-                    onClick={() => setActiveFoodTab('real')}
-                  >
-                    📍 Địa điểm thực tế (OSM)
-                    <span className="tab-count-badge">{searchResults.length}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`food-explorer-tab ${activeFoodTab === 'ai' ? 'active' : ''}`}
-                    onClick={() => setActiveFoodTab('ai')}
-                  >
-                    ✨ AI Gợi ý (Gemini)
-                    <span className="tab-count-badge">{foodMapModal.aiSuggestions.length}</span>
-                  </button>
-                </div>
+
 
                 {/* 3. Nội dung Tab A: Kết quả tìm kiếm thực tế (Nominatim OpenStreetMap) */}
-                {activeFoodTab === 'real' && (
+                
                   <div className="food-tab-content">
                     <div className="food-tab-info-bar">
-                      <span>🗺️ Dữ liệu địa điểm thực tế xác thực từ OpenStreetMap</span>
-                      {isSearchingRealPoi && <span style={{ color: '#0284c7', fontWeight: '600' }}>⏳ Đang tìm...</span>}
+                      <span style={{display: "flex", alignItems: "center", gap: "6px"}}><Map size={16} /> Dữ liệu địa điểm thực tế xác thực từ OpenStreetMap</span>
+                      {isSearchingRealPoi && <span style={{ color: "#0284c7", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}><Clock size={14} /> Đang tìm...</span>}
                     </div>
 
                     {isSearchingRealPoi ? (
@@ -1575,27 +1467,19 @@ const ItineraryPage = () => {
                         <button 
                           type="button" 
                           className="btn-food-action" 
-                          onClick={() => fetchRealPoiSuggestions(mapSearchInput || 'quán ăn', foodMapModal.query)}
+                          onClick={() => fetchRealPoiSuggestions(mapSearchInput || (foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn'), foodMapModal.query)}
                         >
                           Thử lại
                         </button>
                       </div>
                     ) : searchResults.length === 0 ? (
                       <div style={{ margin: '16px', padding: '32px 16px', textAlign: 'center', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '14px', color: '#64748b', fontSize: '13px' }}>
-                        <p style={{ fontSize: '26px', margin: '0 0 6px 0' }}>📍</p>
+                        <p style={{ margin: "0 0 6px 0" }}><MapPin size={26} color="#64748b" /></p>
                         <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: '#334155' }}>
                           Không tìm thấy địa điểm thực tế nào cho "{mapSearchInput || foodMapModal.query}"
                         </p>
                         <p style={{ margin: '0 0 12px 0', fontSize: '12px' }}>
-                          Hãy thử nhập tên quán cụ thể, hoặc chuyển sang tab <strong>AI Gợi ý</strong> để tham khảo.
-                        </p>
-                        <button 
-                          type="button" 
-                          className="btn-food-action" 
-                          onClick={() => setActiveFoodTab('ai')}
-                        >
-                          ✨ Chuyển sang AI Gợi ý
-                        </button>
+                          Hãy thử nhập tên quán cụ thể, Hãy thử nhập tên cụ thể để tìm kiếm chính xác hơn.</p>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
@@ -1609,19 +1493,18 @@ const ItineraryPage = () => {
                             <article 
                               key={poi.place_id || idx} 
                               className={`food-card ${mapQuery === placeName ? 'preview-active' : ''}`}
-                              onMouseEnter={() => handlePreviewMap(placeName)}
                               onClick={() => handlePreviewMap(placeName)}
-                              title="Click hoặc di chuột để xem vị trí trên bản đồ bên phải"
+                              title="Click để xem vị trí trên bản đồ bên phải"
                             >
                               <div className="food-card-top">
                                 <h4 className="food-card-name">{placeName}</h4>
                                 <span className="food-card-type-badge">
-                                  {poi.type === 'restaurant' ? '🍴 Nhà hàng' : poi.type === 'cafe' ? '☕ Cafe' : poi.type === 'bar' ? '🍻 Quán' : '📍 Địa điểm thực'}
+                                  {poi.type === 'restaurant' ? <><Utensils size={12} style={{marginRight: 2}} /> Nhà hàng</> : poi.type === 'cafe' ? <><Coffee size={12} style={{marginRight: 2}} /> Cafe</> : poi.type === 'bar' ? <><Beer size={12} style={{marginRight: 2}} /> Quán</> : <><MapPin size={12} style={{marginRight: 2}} /> Địa điểm thực</>}
                                 </span>
                               </div>
 
                               <p className="food-card-address" title={poi.display_name}>
-                                📍 {poi.display_name}
+                                <MapPin size={12} style={{marginRight: 4}} /> {poi.display_name}
                               </p>
 
                               <div className="food-card-actions">
@@ -1635,7 +1518,7 @@ const ItineraryPage = () => {
                                   disabled={isAdding}
                                   title="Lưu nhà hàng này thành hoạt động mới trong chuyến đi"
                                 >
-                                  {isAdding ? '⏳ Đang thêm...' : isAdded ? '✅ Đã thêm' : '➕ Thêm vào lịch trình'}
+                                  {isAdding ? <><Clock size={14} style={{marginRight: 4}} /> Đang thêm...</> : isAdded ? <><CheckCircle size={14} style={{marginRight: 4}} /> Đã thêm</> : <><Plus size={14} style={{marginRight: 4}} /> Thêm vào lịch trình</>}
                                 </button>
 
                                 <button
@@ -1647,7 +1530,7 @@ const ItineraryPage = () => {
                                   }}
                                   title="Ghim bản đồ Google Maps bên cạnh"
                                 >
-                                  🗺️ Ghim bản đồ
+                                  <><Map size={14} style={{marginRight: 4}} /> Ghim bản đồ</>
                                 </button>
 
                                 <a
@@ -1658,7 +1541,7 @@ const ItineraryPage = () => {
                                   onClick={(e) => e.stopPropagation()}
                                   title="Chỉ đường trên Google Maps"
                                 >
-                                  🧭 Chỉ đường
+                                  <><Compass size={14} style={{marginRight: 4}} /> Chỉ đường</>
                                 </a>
                               </div>
                             </article>
@@ -1667,174 +1550,21 @@ const ItineraryPage = () => {
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* 4. Nội dung Tab B: Gợi ý từ Gemini AI (có dòng cảnh báo kiểm chứng) */}
-                {activeFoodTab === 'ai' && (
-                  <div className="food-tab-content">
-                    {/* Dòng cảnh báo nhỏ theo yêu cầu */}
-                    <div className="food-ai-disclaimer">
-                      <span style={{ fontSize: '14px' }}>⚠️</span>
-                      <span>Gợi ý AI có thể cần kiểm chứng lại địa chỉ thực tế trước khi khởi hành.</span>
-                    </div>
-
-                    {foodMapModal.loadingAi ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#c2410c', fontSize: '13px', fontWeight: '600' }}>
-                          <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
-                          AI đang phân tích & gợi ý ẩm thực quanh chặng...
-                        </div>
-                        {[1, 2, 3].map((n) => (
-                          <div key={n} className="food-skeleton-card">
-                            <div className="skeleton-shimmer" style={{ height: '18px', width: '70%' }} />
-                            <div className="skeleton-shimmer" style={{ height: '14px', width: '50%' }} />
-                            <div className="skeleton-shimmer" style={{ height: '36px', width: '100%' }} />
-                          </div>
-                        ))}
-                      </div>
-                    ) : foodMapModal.errorAi ? (
-                      <div style={{ margin: '16px', padding: '20px', textAlign: 'center', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', color: '#991b1b', fontSize: '13px' }}>
-                        <p style={{ margin: '0 0 10px 0', fontWeight: '600' }}>{foodMapModal.errorAi}</p>
-                        <button 
-                          type="button" 
-                          className="btn-food-action" 
-                          onClick={() => fetchAISuggestions(foodMapModal.currentKeyword, foodMapModal.query)}
-                        >
-                          Thử lại
-                        </button>
-                      </div>
-                    ) : foodMapModal.aiSuggestions.length === 0 ? (
-                      <div style={{ margin: '16px', padding: '32px 16px', textAlign: 'center', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '14px', color: '#64748b', fontSize: '13px' }}>
-                        <p style={{ fontSize: '26px', margin: '0 0 6px 0' }}>🔍</p>
-                        <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: '#334155' }}>
-                          Không tìm thấy gợi ý AI phù hợp cho '{foodMapModal.currentKeyword || mapQuery}'
-                        </p>
-                        <p style={{ margin: '0 0 12px 0', fontSize: '12px' }}>
-                          Vui lòng thử lại với từ khóa khác hoặc bấm xem gợi ý gốc.
-                        </p>
-                        <button 
-                          type="button" 
-                          className="btn-food-action" 
-                          onClick={() => {
-                            setMapSearchInput('');
-                            handlePerformSearch('restaurants');
-                          }}
-                        >
-                          ↺ Xem đặc sản nổi tiếng
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
-                        {foodMapModal.aiSuggestions.map((item, idx) => {
-                          const itemKey = `${item.name}-ai`;
-                          const isAdded = !!addedRestaurants[itemKey];
-                          const isAdding = addingRestaurantKey === itemKey;
-
-                          return (
-                            <article 
-                              key={idx} 
-                              className={`food-card ${mapQuery === item.name ? 'preview-active' : ''}`}
-                              onMouseEnter={() => handlePreviewMap(item.name)}
-                              onClick={() => handlePreviewMap(item.name)}
-                              title="Click hoặc di chuột để xem vị trí trên bản đồ bên phải"
-                            >
-                              <div className="food-card-top">
-                                <h4 className="food-card-name">{item.name}</h4>
-                                {item.estimatedDistance && (
-                                  <span className="food-card-distance" title="Khoảng cách ước lượng">
-                                    📍 {item.estimatedDistance}
-                                  </span>
-                                )}
-                              </div>
-
-                              {item.specialty && (
-                                <p className="food-card-specialty">
-                                  <span>🍲</span> Món đặc trưng: <strong>{item.specialty}</strong>
-                                </p>
-                              )}
-
-                              {item.reason && (
-                                <p className="food-card-reason">
-                                  💡 {item.reason}
-                                </p>
-                              )}
-
-                              <div className="food-card-actions">
-                                <button
-                                  type="button"
-                                  className={`btn-food-add ${isAdded ? 'added' : ''}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddRestaurantToItinerary(item, 'ai');
-                                  }}
-                                  disabled={isAdding}
-                                  title="Lưu nhà hàng này thành hoạt động mới trong chuyến đi"
-                                >
-                                  {isAdding ? '⏳ Đang thêm...' : isAdded ? '✅ Đã thêm' : '➕ Thêm vào lịch trình'}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="btn-food-action"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCopyFoodName(item.name);
-                                  }}
-                                  title="Sao chép tên quán ăn"
-                                >
-                                  {copiedFoodName === item.name ? (
-                                    <span style={{ color: '#059669', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                                      ✅ Đã chép
-                                    </span>
-                                  ) : (
-                                    <>📋 Copy</>
-                                  )}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="btn-food-action focus-map"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleFocusMapRestaurant(item.name);
-                                  }}
-                                  title="Ghim bản đồ bên cạnh"
-                                >
-                                  🗺️ Ghim bản đồ
-                                </button>
-
-                                <a
-                                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.name + ' ' + foodMapModal.query)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn-food-action"
-                                  onClick={(e) => e.stopPropagation()}
-                                  title="Chỉ đường trên Google Maps"
-                                >
-                                  🧭 Chỉ đường
-                                </a>
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Nửa bên phải: Google Maps Embed Panel & Bản đồ trực quan */}
               <div className="food-map-panel">
                 <div className="food-map-panel-bar">
                   <span>
-                    Bản đồ: <strong>{mapQuery === 'restaurants' ? 'Tất cả quán ăn' : mapQuery}</strong> quanh <em>{foodMapModal.query}</em>
+                    Bản đồ: <strong>{mapQuery === 'restaurants' ? 'Tất cả quán ăn' : mapQuery === 'hotels' ? 'Tất cả khách sạn' : mapQuery === 'transit station' ? 'Tất cả bến xe' : mapQuery}</strong> quanh <em>{foodMapModal.query}</em>
                   </span>
                   {mapQuery !== 'restaurants' && (
                     <button 
                       type="button" 
                       onClick={() => {
                         setMapSearchInput('');
-                        handlePerformSearch('restaurants');
+                          handlePerformSearch('');
                       }}
                       className="food-map-reset-btn"
                     >
@@ -1845,7 +1575,7 @@ const ItineraryPage = () => {
 
                 <div className="food-map-iframe-wrapper">
                   <iframe
-                    title="Bản đồ quán ăn gần đây"
+                    title={`Bản đồ ${foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn'} gần đây`}
                     src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery + ' near ' + foodMapModal.query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                     className="food-map-iframe"
                     loading="lazy"
@@ -1856,7 +1586,7 @@ const ItineraryPage = () => {
             </div>
 
             <div className="food-map-modal-footer">
-              <span>💡 Di chuột hoặc click thẻ để xem vị trí trên bản đồ. Bấm <strong>"➕ Thêm vào lịch trình"</strong> để đưa vào kế hoạch chuyến đi.</span>
+              <span>💡 Click thẻ để xem vị trí trên bản đồ. Bấm <strong>"➕ Thêm vào lịch trình"</strong> để đưa vào kế hoạch chuyến đi.</span>
               <a 
                 href={`https://www.google.com/maps/search/${encodeURIComponent(mapQuery + ' near ' + foodMapModal.query)}`} 
                 target="_blank" 

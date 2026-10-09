@@ -928,9 +928,23 @@ TRẢ VỀ DUY NHẤT một JSON Object thuần túy (không bọc code block ``
             string userApiKey = null)
         {
             var apiKey = GetEffectiveApiKey(userApiKey);
-            if (string.IsNullOrEmpty(apiKey))
+            if (string.IsNullOrEmpty(apiKey) || apiKey == "YOUR_API_KEY_HERE")
             {
-                throw new InvalidOperationException("Chưa cấu hình Gemini API Key.");
+                _logger.LogWarning("[RESILIENCE] Chưa cấu hình Gemini API Key. Kích hoạt Fallback Mock cho Gợi ý Hành lý.");
+                return new List<AiPackingSuggestionDto>
+                {
+                    new AiPackingSuggestionDto { ItemName = "Áo phông mỏng mát", Category = "Quần áo & Trang phục", Quantity = days, IsShared = false, Reason = "Mặc hàng ngày" },
+                    new AiPackingSuggestionDto { ItemName = "Quần short", Category = "Quần áo & Trang phục", Quantity = days / 2, IsShared = false, Reason = "Thoải mái khi di chuyển" },
+                    new AiPackingSuggestionDto { ItemName = "Đồ bơi", Category = "Quần áo & Trang phục", Quantity = 1, IsShared = false, Reason = "Dự phòng nếu có hồ bơi/biển" },
+                    new AiPackingSuggestionDto { ItemName = "Căn cước công dân/Hộ chiếu", Category = "Giấy tờ & Tiền mặt", Quantity = 1, IsShared = false, Reason = "Giấy tờ bắt buộc" },
+                    new AiPackingSuggestionDto { ItemName = "Tiền mặt dự phòng", Category = "Giấy tờ & Tiền mặt", Quantity = 1, IsShared = false, Reason = "Mua sắm lặt vặt" },
+                    new AiPackingSuggestionDto { ItemName = "Sạc dự phòng", Category = "Đồ điện tử & Công nghệ", Quantity = 1, IsShared = false, Reason = "Sạc pin khi di chuyển" },
+                    new AiPackingSuggestionDto { ItemName = "Tai nghe", Category = "Đồ điện tử & Công nghệ", Quantity = 1, IsShared = false, Reason = "Nghe nhạc/gọi điện" },
+                    new AiPackingSuggestionDto { ItemName = "Kem chống nắng", Category = "Y tế & Sức khỏe", Quantity = 1, IsShared = true, Reason = "Bảo vệ da ngoài trời" },
+                    new AiPackingSuggestionDto { ItemName = "Thuốc đau bụng, hạ sốt", Category = "Y tế & Sức khỏe", Quantity = 1, IsShared = true, Reason = "Phòng ngừa ốm đau" },
+                    new AiPackingSuggestionDto { ItemName = "Bàn chải, kem đánh răng mini", Category = "Đồ dùng cá nhân", Quantity = 1, IsShared = false, Reason = "Vệ sinh cá nhân" },
+                    new AiPackingSuggestionDto { ItemName = "Khăn giấy, giấy ướt", Category = "Vật dụng khác", Quantity = 2, IsShared = true, Reason = "Lau chùi khi cần" }
+                };
             }
 
             var shortDest = destination.Split(',').First().Trim();

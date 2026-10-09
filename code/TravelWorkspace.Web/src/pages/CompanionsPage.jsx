@@ -1,31 +1,94 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { getShortLocation } from '../utils/formatLocation';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Bell, Check, X, MapPin, Calendar, Clock, Loader2, RefreshCw, Mail } from 'lucide-react';
 import InviteMemberModal from '../components/InviteMemberModal';
+import TripNavigation from '../components/TripNavigation';
 import './CompanionsPage.css';
 
 const CompanionsPage = () => {
+  const location = useLocation();
   const [trips, setTrips] = useState([]);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showInvitationsDropdown, setShowInvitationsDropdown] = useState(false);
+  const [invitations, setInvitations] = useState([]);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const fetchTrips = async () => {
+    try {
+      const res = await api.get('/Trip');
+      setTrips(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInvitations = async () => {
+    try {
+      const res = await api.get('/users/me/invitations');
+      setInvitations(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    const fetchTrips = async () => {
-      try {
-        const res = await api.get('/Trip');
-        setTrips(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchTrips();
+    fetchInvitations();
+
+    const handleUpdate = () => {
+      fetchTrips();
+      fetchInvitations();
+    };
+
+    window.addEventListener('invitationsUpdated', handleUpdate);
+    return () => window.removeEventListener('invitationsUpdated', handleUpdate);
   }, []);
+
+  useEffect(() => {
+    if (trips.length > 0) {
+      const params = new URLSearchParams(location.search);
+      const tripIdFromUrl = params.get('tripId');
+      if (tripIdFromUrl && (!selectedTrip || selectedTrip.id !== parseInt(tripIdFromUrl))) {
+        const trip = trips.find(t => t.id === parseInt(tripIdFromUrl));
+        if (trip) {
+          handleSelectTrip(trip);
+        }
+      }
+    }
+  }, [location.search, trips]);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const handleRespond = async (invitation, accept) => {
+    setActionLoadingId(invitation.tripMemberId);
+    setToast(null);
+
+    try {
+      const res = await api.put(`/invitations/${invitation.tripMemberId}/respond`, { accept });
+      setToast({ type: 'success', text: res.data?.message || (accept ? 'Đã tham gia!' : 'Đã từ chối.') });
+      setInvitations(prev => prev.filter(item => item.tripMemberId !== invitation.tripMemberId));
+      fetchTrips();
+      window.dispatchEvent(new CustomEvent('invitationsUpdated'));
+    } catch (err) {
+      setToast({ type: 'error', text: 'Có lỗi xảy ra.' });
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const handleSelectTrip = async (trip) => {
     setSelectedTrip(trip);
@@ -50,14 +113,90 @@ const CompanionsPage = () => {
   if (!selectedTrip) {
     return (
       <div className="page-container">
-        <div className="page-header">
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h1 className="page-title">Quản lý Bạn đồng hành</h1>
             <p className="page-subtitle">Chọn một lịch trình để xem và quản lý thành viên tham gia.</p>
           </div>
+          <div style={{ position: 'relative' }}>
+            <button 
+              style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                background: 'transparent', border: 'none', 
+                cursor: 'pointer', padding: '8px', zIndex: 10
+              }}
+              title="Lời mời chuyến đi"
+              onClick={() => setShowInvitationsDropdown(!showInvitationsDropdown)}
+            >
+              <Bell size={28} color="#ef4444" />
+              {invitations.length > 0 && (
+                <span style={{ 
+                  position: 'absolute', top: 2, right: 2,
+                  backgroundColor: '#ef4444', color: '#fff', fontSize: '11px', fontWeight: 'bold', 
+                  padding: '2px 6px', borderRadius: '10px', border: '2px solid #f8fafc'
+                }}>
+                  {invitations.length}
+                </span>
+              )}
+            </button>
+            {showInvitationsDropdown && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                width: '350px', background: '#fff', borderRadius: '12px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)', border: '1px solid #eaeaea',
+                zIndex: 100, overflow: 'hidden'
+              }}>
+                <div style={{ padding: '16px', borderBottom: '1px solid #eaeaea', background: '#f8fafc', fontWeight: 'bold' }}>
+                  Lời mời chuyến đi
+                </div>
+                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                  {invitations.length === 0 ? (
+                    <div style={{ padding: '40px 16px', textAlign: 'center', color: '#64748b' }}>
+                      <Mail size={32} style={{ margin: '0 auto 12px', color: '#94a3b8' }} />
+                      <p style={{ margin: 0, fontSize: '14px' }}>Không có thông báo nào</p>
+                    </div>
+                  ) : (
+                    <div className="invi-page-grid" style={{ padding: '16px', gridTemplateColumns: '1fr', gap: '12px' }}>
+                      {invitations.map((item) => {
+                        const isProcessing = actionLoadingId === item.tripMemberId;
+                        return (
+                          <div key={item.tripMemberId} className="invi-page-card" style={{ padding: '12px' }}>
+                            <div className="invi-page-card-header" style={{ marginBottom: '8px' }}>
+                              <h3 className="invi-page-trip-title" style={{ fontSize: '15px' }}>{item.tripTitle}</h3>
+                              <span className="invi-page-status-badge" style={{ fontSize: '11px' }}>
+                                <Clock size={10} /> Chờ
+                              </span>
+                            </div>
+                            <div className="invi-page-inviter-box" style={{ background: 'transparent', padding: 0, marginBottom: '12px' }}>
+                              <div className="invi-page-inviter-initials" style={{ width: 28, height: 28, fontSize: '12px' }}>
+                                {item.inviterName ? item.inviterName.charAt(0).toUpperCase() : 'H'}
+                              </div>
+                              <div className="invi-page-inviter-info">
+                                <span className="invi-page-inviter-name" style={{ fontSize: '13px' }}>{item.inviterName || 'Chủ chuyến đi'}</span>
+                              </div>
+                            </div>
+                            <div className="invi-page-actions" style={{ gap: '8px' }}>
+                              <button type="button" disabled={isProcessing} onClick={() => handleRespond(item, false)} className="invi-page-btn-decline" style={{ height: '32px', fontSize: '12px', flex: 1 }}>
+                                <X size={14} /><span>Từ chối</span>
+                              </button>
+                              <button type="button" disabled={isProcessing} onClick={() => handleRespond(item, true)} className="invi-page-btn-accept" style={{ height: '32px', fontSize: '12px', flex: 1 }}>
+                                {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                                <span>Đồng ý</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        
-        <div className="explore-grid mt-8" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', marginTop: '32px' }}>
+
+        <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '32px', marginBottom: '16px' }}>Danh sách chuyến đi của bạn</h2>
+        <div className="explore-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
           {trips.length === 0 ? (
             <p style={{ color: 'var(--color-text-muted)' }}>Bạn chưa có chuyến đi nào.</p>
           ) : (
@@ -91,16 +230,19 @@ const CompanionsPage = () => {
         </button>
       </div>
 
+      <TripNavigation selectedTripId={selectedTrip.id} />
+
       <div className="page-header">
         <div>
           <h1 className="page-title">Nhóm đi {selectedTrip.title}</h1>
           <p className="page-subtitle">Quản lý {selectedTrip.numberOfParticipants || 1} thành viên và quyền truy cập vào chuyến đi này.</p>
         </div>
         <button 
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:bg-teal-800 rounded-xl shadow-sm transition-all cursor-pointer hover:shadow-md"
+          className="btn-primary"
+          style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
           onClick={() => setShowInviteModal(true)}
         >
-          <UserPlus className="w-4 h-4" />
+          <UserPlus size={18} />
           <span>Mời thành viên</span>
         </button>
       </div>

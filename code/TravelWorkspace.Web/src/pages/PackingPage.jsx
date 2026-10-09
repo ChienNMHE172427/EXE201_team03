@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import PackingList from '../components/PackingList';
+import TripNavigation from '../components/TripNavigation';
 import { Luggage, ArrowLeft, Users, MapPin } from 'lucide-react';
 
 const PackingPage = () => {
@@ -101,20 +102,14 @@ const PackingPage = () => {
   }
 
   return (
-    <div className="page-container p-4 sm:p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition bg-white px-4 py-2 rounded-xl border border-slate-300 shadow-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Trở về chuyến đi</span>
+    <div className="page-container">
+      <div style={{ marginBottom: '24px' }}>
+        <button onClick={handleBack} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
+          ← Quay lại danh sách Lịch trình
         </button>
-
-        <span className="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">
-          📍 {getShortLocation(selectedTrip.destination)}
-        </span>
       </div>
+
+      <TripNavigation selectedTripId={selectedTrip.id} />
 
       {/* Render Component PackingList */}
       <PackingList tripId={selectedTrip.id} />

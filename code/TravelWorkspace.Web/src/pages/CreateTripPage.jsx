@@ -7,11 +7,21 @@ import './CreateTripPage.css';
 
 const CreateTripPage = () => {
   const navigate = useNavigate();
+  const getInitialDates = () => {
+    const today = new Date();
+    const startStr = today.toISOString().split('T')[0];
+    const end = new Date(today);
+    end.setDate(end.getDate() + 4);
+    const endStr = end.toISOString().split('T')[0];
+    return { startStr, endStr };
+  };
+  const initialDates = getInitialDates();
+
   const [formData, setFormData] = useState({
     origin: 'Hà Nội, Việt Nam',
     destination: 'Ninh Bình, Việt Nam',
-    startDate: '2026-09-16',
-    endDate: '2026-09-20',
+    startDate: initialDates.startStr,
+    endDate: initialDates.endStr,
     budget: '12000000',
     numberOfParticipants: '4',
     preferences: ['Thiên nhiên']

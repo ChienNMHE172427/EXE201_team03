@@ -12,11 +12,13 @@ import {
   Users, 
   Calendar,
   CheckCircle2,
-  Maximize2
+  Maximize2,
+  Camera
 } from 'lucide-react';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import './SharedGalleryPage.css';
+import TripNavigation from '../components/TripNavigation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5300';
 
@@ -275,35 +277,13 @@ const SharedGalleryPage = () => {
       </div>
 
       {/* Wizard Steps */}
-      <div className="wizard-steps-container">
-        <div className="wizard-steps">
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/itinerary?tripId=${selectedTripId}`)}>
-            <div className="step-circle">1</div>
-            <div className="step-info"><div className="step-title">Lịch trình</div></div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTripId}`)}>
-            <div className="step-circle">2</div>
-            <div className="step-info"><div className="step-title">Chi phí</div></div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/collaborate?tripId=${selectedTripId}`)}>
-            <div className="step-circle">3</div>
-            <div className="step-info"><div className="step-title">Cộng tác</div></div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step active">
-            <div className="step-circle">📸</div>
-            <div className="step-info"><div className="step-title">Kho ảnh chung</div></div>
-          </div>
-        </div>
-      </div>
+      <TripNavigation selectedTripId={selectedTripId} />
 
       {/* Page Header */}
       <div className="gallery-header">
         <div className="gallery-title-area">
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            📸 Kho ảnh: {formatItemTitle(trip.title)}
+            <Camera size={24} style={{ marginRight: 8, color: '#475569' }} /> Kho ảnh: {formatItemTitle(trip.title)}
           </h1>
           <p className="page-subtitle">
             Lưu giữ trọn vẹn kỷ niệm du lịch độ phân giải cao trên Cloudinary • {photos.length} bức ảnh • {contributors} người đóng góp

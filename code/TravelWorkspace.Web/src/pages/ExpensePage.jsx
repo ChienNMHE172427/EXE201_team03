@@ -14,11 +14,13 @@ import {
   Calendar, 
   CheckCircle2, 
   ShieldCheck,
-  FileText
+  FileText,
+  MapPin
 } from 'lucide-react';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import './BudgetPage.css';
+import TripNavigation from '../components/TripNavigation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5300';
 
@@ -299,7 +301,7 @@ const ExpensePage = () => {
                       <Users size={14} color="#8b5cf6" style={{ marginRight: 6 }} /> Nhóm: {t.numberOfParticipants || 1} người
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
-                      <span style={{ color: '#ef4444', marginRight: 6 }}>📍</span> Điểm đến: {getShortLocation(t.destination)}
+                      <MapPin size={14} color="#ef4444" style={{ marginRight: 6 }} /> Điểm đến: {getShortLocation(t.destination)}
                     </span>
                   </p>
                   <div style={{ marginTop: '16px', fontWeight: '600', color: '#6366f1', fontSize: '14px' }}>
@@ -335,24 +337,7 @@ const ExpensePage = () => {
       </div>
 
       {/* 5-Step Wizard Navigation */}
-      <div className="wizard-steps-container">
-        <div className="wizard-steps">
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/itinerary?tripId=${selectedTripId}`)}>
-            <div className="step-circle">1</div>
-            <div className="step-info"><div className="step-title">Lịch trình</div></div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step active">
-            <div className="step-circle">2</div>
-            <div className="step-info"><div className="step-title">Chi phí nhóm</div></div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/collaborate?tripId=${selectedTripId}`)}>
-            <div className="step-circle">3</div>
-            <div className="step-info"><div className="step-title">Cộng tác nhóm</div></div>
-          </div>
-        </div>
-      </div>
+      <TripNavigation selectedTripId={selectedTripId} />
 
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: 20 }}>
@@ -381,7 +366,7 @@ const ExpensePage = () => {
         <div className="stat-card-gradient stat-card-group">
           <div>
             <div className="stat-card-header">
-              <span className="stat-card-title">👥 Tổng Quỹ Chung Nhóm</span>
+              <span className="stat-card-title"><Users size={16} style={{marginRight: 6}} /> TỔNG QUỸ CHUNG NHÓM</span>
               <span style={{ fontSize: '11px', background: '#e0e7ff', color: '#4338ca', padding: '3px 8px', borderRadius: 999, fontWeight: 700 }}>
                 Chia đều cho nhóm
               </span>
@@ -405,7 +390,7 @@ const ExpensePage = () => {
         <div className="stat-card-gradient stat-card-personal">
           <div>
             <div className="stat-card-header">
-              <span className="stat-card-title">👛 Tổng Bạn Đã Tiêu Riêng</span>
+              <span className="stat-card-title"><Wallet size={16} style={{marginRight: 6}} /> TỔNG BẠN ĐÃ TIÊU RIÊNG</span>
               <span className="personal-badge-tag">
                 <ShieldCheck size={13} /> Ví riêng tư
               </span>
@@ -426,7 +411,7 @@ const ExpensePage = () => {
         <div className="stat-card-gradient stat-card-total">
           <div>
             <div className="stat-card-header">
-              <span className="stat-card-title">💳 Tổng tiền bạn đã chi</span>
+              <span className="stat-card-title"><DollarSign size={16} style={{marginRight: 6}} /> TỔNG TIỀN BẠN ĐÃ CHI</span>
               <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '3px 8px', borderRadius: 999, fontWeight: 700 }}>
                 Cá nhân + Quỹ
               </span>

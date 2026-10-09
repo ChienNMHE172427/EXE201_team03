@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, X, MapPin, Calendar, Clock, Loader2, ArrowRight } from 'lucide-react';
+import { Bell, Check, X, MapPin, Calendar, Clock, Loader2, ArrowRight, RefreshCw, Mail } from 'lucide-react';
 import api from '../services/api';
 import { getShortLocation } from '../utils/formatLocation';
 import './InvitationsPage.css';
@@ -111,7 +111,7 @@ const InvitationsPage = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span>🔔</span> Lời mời chuyến đi
+            <Bell size={28} style={{ color: '#f59e0b' }} /> Lời mời chuyến đi
           </h1>
           <p className="page-subtitle">
             Xem và phản hồi các chuyến đi bạn được bạn bè mời cùng đồng hành.
@@ -123,7 +123,7 @@ const InvitationsPage = () => {
           disabled={loading}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
         >
-          {loading ? <Loader2 size={16} className="animate-spin" /> : '🔄'}
+          {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
           <span>Làm mới</span>
         </button>
       </div>
@@ -136,7 +136,7 @@ const InvitationsPage = () => {
         </div>
       ) : invitations.length === 0 ? (
         <div className="invi-page-empty-box">
-          <div className="invi-page-empty-icon">📬</div>
+          <div className="invi-page-empty-icon" style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '16px' }}><Mail size={48} style={{ color: '#94a3b8' }} /></div>
           <h2 className="invi-page-empty-title">Không có lời mời nào đang chờ</h2>
           <p className="invi-page-empty-desc">
             Khi bạn bè thêm bạn vào kế hoạch chuyến đi của họ, lời mời sẽ hiển thị tại đây để bạn xác nhận tham gia.

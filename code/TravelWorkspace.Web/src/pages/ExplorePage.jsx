@@ -7,6 +7,7 @@ import ReviewSection from '../components/ReviewSection';
 import { MessageSquare, X } from 'lucide-react';
 import MOCK_SERVICES from '../servicesData.json';
 import hotelLinks from '../hotelLinks.json';
+import TripNavigation from '../components/TripNavigation';
 
 const ExplorePage = () => {
   const [trips, setTrips] = useState([]);
@@ -172,37 +173,7 @@ const ExplorePage = () => {
         </button>
       </div>
 
-      <div className="wizard-steps-container">
-        <div className="wizard-steps">
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/itinerary?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">1</div>
-            <div className="step-info">
-              <div className="step-title">Lịch trình</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step active">
-            <div className="step-circle">2</div>
-            <div className="step-info">
-              <div className="step-title">Khám phá & Dịch vụ</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">3</div>
-            <div className="step-info">
-              <div className="step-title">Chi phí nhóm</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/collaborate?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">4</div>
-            <div className="step-info">
-              <div className="step-title">Cộng tác nhóm</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TripNavigation selectedTripId={selectedTripId} />
 
       <div className="page-header">
         <div>

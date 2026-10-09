@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import './CollaboratePage.css';
+import TripNavigation from '../components/TripNavigation';
 
 const CollaboratePage = () => {
   const navigate = useNavigate();
@@ -224,30 +225,7 @@ const CollaboratePage = () => {
         </button>
       </div>
 
-      <div className="wizard-steps-container">
-        <div className="wizard-steps">
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/itinerary?tripId=${selectedTripId}`)}>
-            <div className="step-circle">1</div>
-            <div className="step-info">
-              <div className="step-title">Lịch trình</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTripId}`)}>
-            <div className="step-circle">2</div>
-            <div className="step-info">
-              <div className="step-title">Chi phí nhóm</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step active">
-            <div className="step-circle">3</div>
-            <div className="step-info">
-              <div className="step-title">Cộng tác nhóm</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TripNavigation selectedTripId={selectedTripId} />
 
       <div className="page-header" style={{ marginBottom: 20 }}>
         <div>

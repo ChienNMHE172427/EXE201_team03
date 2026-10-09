@@ -3,6 +3,7 @@ import api from '../services/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getShortLocation } from '../utils/formatLocation';
 import './DocumentsPage.css';
+import TripNavigation from '../components/TripNavigation';
 
 const StatusSelect = ({ initialStatus, itemId, onStatusChange }) => {
   const defaultVal = initialStatus || 'Chưa bắt đầu';
@@ -151,44 +152,7 @@ const DocumentsPage = () => {
         </button>
       </div>
 
-      <div className="wizard-steps-container">
-        <div className="wizard-steps">
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/itinerary?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">1</div>
-            <div className="step-info">
-              <div className="step-title">Lịch trình</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/explore?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">2</div>
-            <div className="step-info">
-              <div className="step-title">Khám phá & Dịch vụ</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/budget?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">3</div>
-            <div className="step-info">
-              <div className="step-title">Chi phí nhóm</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step" style={{ cursor: 'pointer' }} onClick={() => navigate(`/collaborate?tripId=${selectedTrip.id}`)}>
-            <div className="step-circle">4</div>
-            <div className="step-info">
-              <div className="step-title">Cộng tác nhóm</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-          <div className="step active">
-            <div className="step-circle">5</div>
-            <div className="step-info">
-              <div className="step-title">Trạng thái</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TripNavigation selectedTripId={selectedTripId} />
       
       <div className="page-header">
         <div>
