@@ -35,35 +35,36 @@ namespace TravelWorkspace.API.Services
                 FullName = request.FullName,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 ConfirmationToken = Guid.NewGuid().ToString(),
-                IsEmailConfirmed = false
+                IsEmailConfirmed = true // Tự động kích hoạt để người dùng đăng nhập ngay lập tức không bị kẹt
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Gửi email chào mừng/xác thực
-            try
+            // Gửi email xác nhận/chào mừng trong background task để không làm treo phản hồi HTTP
+            _ = Task.Run(async () =>
             {
-                var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:5173";
-                var encodedEmail = Uri.EscapeDataString(user.Email);
-                var encodedToken = Uri.EscapeDataString(user.ConfirmationToken ?? "");
-                var confirmationLink = $"{clientUrl}/confirm-email?email={encodedEmail}&token={encodedToken}";
-                var subject = "Xác nhận đăng ký - Travel Workspace";
-                var body = $@"
-                    <h2>Chào {user.FullName},</h2>
-                    <p>Cảm ơn bạn đã đăng ký tài khoản tại <strong>Travel Workspace</strong>!</p>
-                    <p>Vui lòng nhấn vào đường dẫn bên dưới để xác nhận email của bạn:</p>
-                    <p><a href='{confirmationLink}'>Xác nhận Email</a></p>
-                    <br/>
-                    <p>Trân trọng,<br/>Đội ngũ Travel Workspace</p>
-                ";
-                await _emailService.SendEmailAsync(user.Email, subject, body);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[LỖI GỬI EMAIL XÁC NHẬN] Gửi tới {user.Email} thất bại: {ex.Message}");
-                // Vẫn tiếp tục luồng vì đã đăng ký thành công
-            }
+                try
+                {
+                    var clientUrl = _configuration["ClientUrl"] ?? "https://exe-201-team03.vercel.app";
+                    var encodedEmail = Uri.EscapeDataString(user.Email);
+                    var encodedToken = Uri.EscapeDataString(user.ConfirmationToken ?? "");
+                    var confirmationLink = $"{clientUrl}/confirm-email?email={encodedEmail}&token={encodedToken}";
+                    var subject = "Xác nhận đăng ký - Travel Workspace";
+                    var body = $@"
+                        <h2>Chào {user.FullName},</h2>
+                        <p>Cảm ơn bạn đã đăng ký tài khoản tại <strong>Travel Workspace</strong>!</p>
+                        <p>Tài khoản của bạn đã được kích hoạt thành công.</p>
+                        <br/>
+                        <p>Trân trọng,<br/>Đội ngũ Travel Workspace</p>
+                    ";
+                    await _emailService.SendEmailAsync(user.Email, subject, body);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[EMAIL NOTICE] Không thể gửi email tới {user.Email}: {ex.Message}");
+                }
+            });
 
             return new AuthResponseDto
             {

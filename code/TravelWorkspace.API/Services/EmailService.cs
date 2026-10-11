@@ -61,13 +61,14 @@ namespace TravelWorkspace.API.Services
                     ? SecureSocketOptions.SslOnConnect 
                     : (_smtpSettings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
 
-                await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, secureSocketOption);
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await client.ConnectAsync(_smtpSettings.Host, _smtpSettings.Port, secureSocketOption, cts.Token);
                 
                 // Xác thực tài khoản Gmail (Username và App Password 16 ký tự)
-                await client.AuthenticateAsync(_smtpSettings.UserName, _smtpSettings.Password.Replace(" ", ""));
+                await client.AuthenticateAsync(_smtpSettings.UserName, _smtpSettings.Password.Replace(" ", ""), cts.Token);
                 
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
+                await client.SendAsync(message, cts.Token);
+                await client.DisconnectAsync(true, cts.Token);
 
                 _logger.LogInformation("Đã gửi email thành công đến {ToEmail}", toEmail);
             }
