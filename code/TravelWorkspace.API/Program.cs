@@ -13,8 +13,50 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+string ConvertPostgresUrlToNpgsql(string url)
+{
+    if (string.IsNullOrWhiteSpace(url)) return url;
+    if (!url.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) && 
+        !url.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
+        return url;
+
+    try
+    {
+        var uri = new Uri(url);
+        var userInfo = uri.UserInfo.Split(':');
+        var user = userInfo.Length > 0 ? userInfo[0] : "";
+        var password = userInfo.Length > 1 ? userInfo[1] : "";
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var database = uri.AbsolutePath.TrimStart('/');
+
+        return $"Host={host};Port={port};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
+    }
+    catch
+    {
+        return url;
+    }
+}
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? builder.Configuration["DATABASE_URL"];
+
+bool isPostgres = !string.IsNullOrEmpty(connectionString) && 
+    (connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) || 
+     connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) || 
+     connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase));
+
+if (isPostgres)
+{
+    var npgsqlConnection = ConvertPostgresUrlToNpgsql(connectionString!);
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(npgsqlConnection));
+}
+else
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(connectionString ?? "Server=(localdb)\\mssqllocaldb;Database=TravelWorkspaceDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"));
+}
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITripService, TripService>();
@@ -77,45 +119,49 @@ if (app.Environment.IsDevelopment())
 
 using (var scope = app.Services.CreateScope())
 {
-    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-    var connStr = config.GetConnectionString("DefaultConnection");
-
-    // Chỉ chạy Migrate nếu không phải LocalDB trên Linux (tránh lỗi Status 139 do Trusted_Connection không hỗ trợ trên Linux)
-    bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
-    bool isLocalDb = !string.IsNullOrEmpty(connStr) && (connStr.Contains("(localdb)", StringComparison.OrdinalIgnoreCase) || connStr.Contains("Trusted_Connection=True", StringComparison.OrdinalIgnoreCase));
-
-    if (isWindows || !isLocalDb)
+    try
     {
-        try
+        var context = scope.ServiceProvider.GetRequiredService<TravelWorkspace.API.Data.AppDbContext>();
+        if (context.Database.IsNpgsql())
         {
-            var context = scope.ServiceProvider.GetRequiredService<TravelWorkspace.API.Data.AppDbContext>();
-            context.Database.Migrate();
+            // Tự động tạo toàn bộ bảng trong PostgreSQL nếu chưa có
+            await context.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            var connStr = config.GetConnectionString("DefaultConnection");
+            bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+            bool isLocalDb = !string.IsNullOrEmpty(connStr) && (connStr.Contains("(localdb)", StringComparison.OrdinalIgnoreCase) || connStr.Contains("Trusted_Connection=True", StringComparison.OrdinalIgnoreCase));
 
-            // Khởi tạo Admin
-            if (!context.Users.Any(u => u.Email == "admin@travelworkspace.com"))
+            if (isWindows || !isLocalDb)
             {
-                context.Users.Add(new TravelWorkspace.API.Models.User
-                {
-                    Email = "admin@travelworkspace.com",
-                    FullName = "Administrator",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-                    Role = "Admin",
-                    CreatedAt = DateTime.UtcNow
-                });
-                context.SaveChanges();
+                context.Database.Migrate();
             }
+        }
 
-            // Tự động chèn 3 chuyến đi mẫu (Template Trips) chất lượng cao
-            await TravelWorkspace.API.Data.TripSeeder.SeedTripsAsync(context);
-        }
-        catch (Exception ex)
+        // Khởi tạo Admin
+        var admin = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@travelworkspace.com");
+        if (admin == null)
         {
-            Console.WriteLine($"[WARNING] Database Migration skipped: {ex.Message}");
+            context.Users.Add(new TravelWorkspace.API.Models.User
+            {
+                Email = "admin@travelworkspace.com",
+                FullName = "Administrator",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                Role = "Admin",
+                CreatedAt = DateTime.UtcNow,
+                IsEmailConfirmed = true
+            });
+            await context.SaveChangesAsync();
         }
+
+        // Tự động chèn 3 chuyến đi mẫu (Template Trips) chất lượng cao
+        await TravelWorkspace.API.Data.TripSeeder.SeedTripsAsync(context);
     }
-    else
+    catch (Exception ex)
     {
-        Console.WriteLine("[INFO] Bỏ qua Database.Migrate trên Linux do chuỗi kết nối LocalDB Windows.");
+        Console.WriteLine($"[WARNING] Database setup / seeding: {ex.Message}");
     }
 }
 
