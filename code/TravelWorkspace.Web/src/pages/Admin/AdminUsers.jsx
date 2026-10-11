@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2, X, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 import './Admin.css';
 
@@ -8,6 +9,10 @@ const AdminUsers = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('All');
+
+  // State quản lý Modal xác nhận xóa
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, user: null });
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -47,21 +52,25 @@ const AdminUsers = () => {
     }
   };
 
-  const deleteUser = async (id, currentRole) => {
-    if (currentRole === 'Admin') {
+  const openDeleteModal = (user) => {
+    if (user.role === 'Admin') {
       alert('Không thể xóa tài khoản Admin!');
       return;
     }
-    
-    if (!window.confirm('Bạn có chắc chắn muốn xóa tài khoản này không?')) {
-      return;
-    }
-    
+    setDeleteModal({ isOpen: true, user });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.user) return;
     try {
-      await api.delete(`/admin/users/${id}?reason=${encodeURIComponent('Yêu cầu từ quản trị viên')}`);
-      setUsers(users.filter(u => u.id !== id));
+      setDeleting(true);
+      await api.delete(`/admin/users/${deleteModal.user.id}`);
+      setUsers(users.filter(u => u.id !== deleteModal.user.id));
+      setDeleteModal({ isOpen: false, user: null });
     } catch (err) {
       alert('Lỗi khi xóa người dùng.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -161,7 +170,7 @@ const AdminUsers = () => {
                         </button>
                         <button 
                           className="btn-action delete"
-                          onClick={() => deleteUser(user.id, user.role)}
+                          onClick={() => openDeleteModal(user)}
                         >
                           Xóa
                         </button>
@@ -174,6 +183,66 @@ const AdminUsers = () => {
           </table>
         </div>
         </>
+      )}
+
+      {/* Modal xác nhận xóa người dùng với UI đẹp mắt */}
+      {deleteModal.isOpen && deleteModal.user && (
+        <div className="admin-modal-backdrop" onClick={() => !deleting && setDeleteModal({ isOpen: false, user: null })}>
+          <div className="admin-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <div className="admin-modal-icon-danger">
+                <Trash2 size={22} color="#dc2626" />
+              </div>
+              <div className="admin-modal-header-text">
+                <h3 className="admin-modal-title">Xác nhận xóa tài khoản</h3>
+                <p className="admin-modal-subtitle">Hành động này sẽ xóa người dùng khỏi hệ thống</p>
+              </div>
+              <button 
+                className="admin-modal-close-btn"
+                onClick={() => !deleting && setDeleteModal({ isOpen: false, user: null })}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="admin-modal-body">
+              <p style={{ margin: 0 }}>Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản sau không?</p>
+              <div className="admin-modal-user-info">
+                <div className="admin-modal-user-item">
+                  <span>Họ và tên:</span>
+                  <strong>{deleteModal.user.fullName || 'Chưa cập nhật'}</strong>
+                </div>
+                <div className="admin-modal-user-item">
+                  <span>Email:</span>
+                  <strong>{deleteModal.user.email}</strong>
+                </div>
+                <div className="admin-modal-user-item">
+                  <span>Vai trò:</span>
+                  <strong>{deleteModal.user.role}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-modal-footer">
+              <button 
+                type="button"
+                className="admin-btn-secondary" 
+                onClick={() => setDeleteModal({ isOpen: false, user: null })}
+                disabled={deleting}
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                type="button"
+                className="admin-btn-danger" 
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
