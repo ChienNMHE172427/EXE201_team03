@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import './Auth.css';
 
@@ -9,13 +10,29 @@ const RegisterPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [countdown, setCountdown] = useState(3);
+
+  useEffect(() => {
+    let timer;
+    if (showSuccessModal && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (showSuccessModal && countdown === 0) {
+      navigate('/login');
+    }
+    return () => clearTimeout(timer);
+  }, [showSuccessModal, countdown, navigate]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsSubmitting(true);
     try {
       await api.post('/auth/register', { fullName, email, password });
-      alert('Đăng ký thành công!');
-      navigate('/login');
+      setShowSuccessModal(true);
     } catch (err) {
       if (err.message === 'Network Error') {
         setError('Không thể kết nối đến Backend (Lỗi mạng).');
@@ -24,6 +41,8 @@ const RegisterPage = () => {
       } else {
         setError('Đăng ký thất bại. Email có thể đã tồn tại.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -64,14 +83,44 @@ const RegisterPage = () => {
               required 
             />
           </div>
-          <button type="submit" className="btn-primary w-full">Đăng ký</button>
+          <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Đang tạo tài khoản...' : 'Đăng ký'}
+          </button>
         </form>
         <p className="auth-switch">
           Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
         </p>
       </div>
+
+      {/* Success Modal UI */}
+      {showSuccessModal && (
+        <div className="auth-modal-backdrop">
+          <div className="auth-modal-card">
+            <div className="auth-modal-icon-wrapper">
+              <CheckCircle2 size={42} strokeWidth={2.5} />
+            </div>
+            <h3 className="auth-modal-title">Đăng ký thành công!</h3>
+            <p className="auth-modal-desc">
+              Chào mừng bạn đến với <strong>Travel Workspace</strong>! Tài khoản của bạn đã được kích hoạt và sẵn sàng sử dụng.
+            </p>
+            <button 
+              type="button" 
+              className="btn-primary w-full" 
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              onClick={() => navigate('/login')}
+            >
+              <span>Đăng nhập ngay</span>
+              <ArrowRight size={18} />
+            </button>
+            <div className="auth-modal-timer">
+              Tự động chuyển trang sau {countdown} giây...
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default RegisterPage;
+
