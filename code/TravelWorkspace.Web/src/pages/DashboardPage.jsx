@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
-import { Bell, Check, X, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { Bell, Check, X, MapPin, Calendar, Loader2, Share2, Globe, Lock } from 'lucide-react';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
@@ -11,6 +11,7 @@ const DashboardPage = () => {
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [sharingTripId, setSharingTripId] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
 
   const fetchTrips = async () => {
@@ -72,6 +73,28 @@ const DashboardPage = () => {
       setTimeout(() => setToastMsg(null), 4000);
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const handleToggleShareTrip = async (trip) => {
+    setSharingTripId(trip.id);
+    try {
+      const res = await api.put(`/trips/${trip.id}/toggle-public`);
+      const newIsPublic = res.data?.isPublic ?? !trip.isPublic;
+      setTrips(trips.map(t => t.id === trip.id ? { ...t, isPublic: newIsPublic } : t));
+      setToastMsg({
+        type: 'success',
+        text: res.data?.message || (newIsPublic ? 'Đã chia sẻ lịch trình thành công!' : 'Đã hủy chia sẻ lịch trình.')
+      });
+      setTimeout(() => setToastMsg(null), 4000);
+    } catch (err) {
+      setToastMsg({
+        type: 'error',
+        text: err.response?.data?.message || 'Không thể thay đổi trạng thái chia sẻ.'
+      });
+      setTimeout(() => setToastMsg(null), 4000);
+    } finally {
+      setSharingTripId(null);
     }
   };
 
@@ -265,18 +288,85 @@ const DashboardPage = () => {
         <div className="trips-list" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {trips.map(trip => (
             <div key={trip.id} className="hero-banner" style={{ margin: 0 }}>
-              <div className="badge">MỚI TẠO</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="badge" style={{ margin: 0 }}>MỚI TẠO</div>
+                {trip.isPublic ? (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(210, 244, 125, 0.2)',
+                    border: '1px solid #d2f47d',
+                    color: '#d2f47d',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: '700'
+                  }}>
+                    <Globe size={13} />
+                    <span>ĐANG CHIA SẺ CÔNG KHAI (TEMPLATE)</span>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: '#e2e8f0',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: '600'
+                  }}>
+                    <Lock size={12} />
+                    <span>Riêng tư</span>
+                  </div>
+                )}
+              </div>
               <h2 className="hero-title">{formatItemTitle(trip.title)}</h2>
               <p className="hero-subtitle">
                 Điểm đến: {getShortLocation(trip.destination)} · Từ {new Date(trip.startDate).toLocaleDateString('vi-VN')} đến {new Date(trip.endDate).toLocaleDateString('vi-VN')}
               </p>
               
-              <div className="hero-actions">
+              <div className="hero-actions" style={{ flexWrap: 'wrap', gap: '12px' }}>
                 <button className="btn-outline" onClick={() => {
                   localStorage.setItem('currentTripId', trip.id);
                   navigate('/itinerary');
                 }}>Mở chi tiết</button>
-                <button className="btn-danger-sm" onClick={() => handleDeleteTrip(trip.id)} style={{marginLeft: '12px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>Xóa</button>
+
+                <button
+                  type="button"
+                  disabled={sharingTripId === trip.id}
+                  onClick={() => handleToggleShareTrip(trip)}
+                  style={{
+                    background: trip.isPublic ? '#122B29' : 'rgba(210, 244, 125, 0.18)',
+                    color: trip.isPublic ? '#d2f47d' : '#d2f47d',
+                    border: trip.isPublic ? '1.5px solid #d2f47d' : '1.5px solid rgba(210, 244, 125, 0.6)',
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '13.5px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s',
+                    boxShadow: trip.isPublic ? '0 0 12px rgba(210, 244, 125, 0.3)' : 'none'
+                  }}
+                  title={trip.isPublic ? "Bấm để hủy chia sẻ" : "Chia sẻ lịch trình này cho mọi người dùng làm template"}
+                >
+                  {sharingTripId === trip.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : trip.isPublic ? (
+                    <Globe size={16} />
+                  ) : (
+                    <Share2 size={16} />
+                  )}
+                  <span>{trip.isPublic ? '✓ Đang chia sẻ mẫu' : 'Share lịch trình (Làm Template)'}</span>
+                </button>
+
+                <button className="btn-danger-sm" onClick={() => handleDeleteTrip(trip.id)} style={{background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}}>Xóa</button>
                 <div className="member-avatars" style={{marginLeft: 'auto'}}>
                   <div className="avatar-circle c1"></div>
                   <span className="member-count">{trip.numberOfParticipants} thành viên</span>

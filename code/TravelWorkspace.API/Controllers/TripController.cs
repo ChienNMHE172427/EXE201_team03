@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TravelWorkspace.API.Models.DTOs;
 using TravelWorkspace.API.Services;
@@ -13,10 +14,12 @@ namespace TravelWorkspace.API.Controllers
     public class TripController : ControllerBase
     {
         private readonly ITripService _tripService;
+        private readonly TravelWorkspace.API.Data.AppDbContext _context;
 
-        public TripController(ITripService tripService)
+        public TripController(ITripService tripService, TravelWorkspace.API.Data.AppDbContext context)
         {
             _tripService = tripService;
+            _context = context;
         }
 
         private int GetUserId()
@@ -76,6 +79,22 @@ namespace TravelWorkspace.API.Controllers
             var trip = await _tripService.UpdateTripAsync(id, request, userId);
             if (trip == null) return NotFound();
             return Ok(trip);
+        }
+
+        [HttpPut("{id:int}/toggle-public")]
+        public async Task<ActionResult> TogglePublic(int id)
+        {
+            var userId = GetUserId();
+            var trip = await _context.Trips.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == userId);
+            if (trip == null) return NotFound(new { message = "Không tìm thấy chuyến đi hoặc bạn không phải chủ sở hữu." });
+
+            trip.IsPublic = !trip.IsPublic;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { 
+                isPublic = trip.IsPublic, 
+                message = trip.IsPublic ? "Đã chia sẻ lịch trình thành công! Mọi người có thể xem và sử dụng làm template." : "Đã hủy chia sẻ lịch trình." 
+            });
         }
 
         [HttpGet("{tripId:int}/members")]

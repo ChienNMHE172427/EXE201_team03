@@ -9,7 +9,7 @@ import TemplateSuggestModal from '../components/TemplateSuggestModal';
 import TemplatePreviewModal from '../components/TemplatePreviewModal';
 import CloneTripModal from '../components/CloneTripModal';
 import TripNavigation from '../components/TripNavigation';
-import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb } from 'lucide-react';
+import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb, Share2, Globe, Lock, Loader2 } from 'lucide-react';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
@@ -104,6 +104,25 @@ const ItineraryPage = () => {
   const [cloneTemplateTrip, setCloneTemplateTrip] = useState(null);
   const [publicTemplates, setPublicTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [isSharingTrip, setIsSharingTrip] = useState(false);
+
+  const handleToggleShareTrip = async () => {
+    if (!trip) return;
+    setIsSharingTrip(true);
+    try {
+      const res = await api.put(`/trips/${trip.id}/toggle-public`);
+      const newIsPublic = res.data?.isPublic ?? !trip.isPublic;
+      setTrip({ ...trip, isPublic: newIsPublic });
+      setCloneToast(res.data?.message || (newIsPublic ? 'Đã chia sẻ lịch trình thành công! Mọi người có thể xem và nhân bản làm mẫu.' : 'Đã hủy chia sẻ lịch trình.'));
+      // Cập nhật lại danh sách publicTemplates
+      const pubRes = await api.get('/trips/public');
+      setPublicTemplates((pubRes.data || []).filter(t => t.isPublic === true));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể thay đổi trạng thái chia sẻ.');
+    } finally {
+      setIsSharingTrip(false);
+    }
+  };
 
   // Tự động tải danh sách Template công khai
   useEffect(() => {
@@ -788,6 +807,36 @@ const ItineraryPage = () => {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            disabled={isSharingTrip}
+            onClick={handleToggleShareTrip}
+            style={{
+              background: trip.isPublic ? '#122B29' : '#ffffff',
+              color: trip.isPublic ? '#d2f47d' : '#122B29',
+              border: trip.isPublic ? '1.5px solid #d2f47d' : '1.5px solid #cbd5e1',
+              padding: '9px 18px',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: '13.5px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s',
+              boxShadow: trip.isPublic ? '0 0 14px rgba(210, 244, 125, 0.35)' : '0 2px 6px rgba(0,0,0,0.06)'
+            }}
+            title={trip.isPublic ? "Bấm để hủy chia sẻ" : "Chia sẻ lịch trình này cho mọi người dùng làm template"}
+          >
+            {isSharingTrip ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : trip.isPublic ? (
+              <Globe size={16} color="#d2f47d" />
+            ) : (
+              <Share2 size={16} color="#122B29" />
+            )}
+            <span>{trip.isPublic ? '✓ Đang chia sẻ mẫu' : 'Share lịch trình (Làm Template)'}</span>
+          </button>
         </div>
       </div>
 
