@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
@@ -923,20 +923,106 @@ const ItineraryPage = () => {
               {/* Banner Gợi ý Template Mẫu Phù Hợp Cho Chuyến Đi */}
               {(() => {
                 const matched = publicTemplates.filter(t => matchDestination(trip.destination, t.destination, t.title));
-                const listToDisplay = matched.length > 0 ? matched : publicTemplates.slice(0, 3);
 
-                if (listToDisplay.length === 0) return null;
+                if (matched.length === 0) {
+                  return (
+                    <div 
+                      className="suggested-templates-banner" 
+                      style={{ 
+                        background: 'linear-gradient(135deg, #132725 0%, #1a3835 100%)', 
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        padding: '24px 28px'
+                      }}
+                    >
+                      <div 
+                        className="suggested-banner-badge" 
+                        style={{ 
+                          background: 'rgba(255, 255, 255, 0.1)', 
+                          borderColor: 'rgba(255, 255, 255, 0.25)', 
+                          color: '#e2e8f0' 
+                        }}
+                      >
+                        <Compass size={12} />
+                        <span>CHƯA CÓ PLAN MẪU</span>
+                      </div>
+                      <h3 className="suggested-banner-title">
+                        Chưa có plan mẫu cho chuyến đi này
+                      </h3>
+                      <p className="suggested-banner-subtitle" style={{ marginBottom: '20px' }}>
+                        Hiện tại chưa có lịch trình mẫu nào phù hợp với điểm đến <strong>{getShortLocation(trip.destination) || 'này'}</strong>. Bạn có thể nhờ Trợ lý Gemini AI lên kế hoạch tự động trong vài giây, xem tất cả template khác hoặc tự tạo hoạt động theo ý muốn!
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={handleGenerateAi}
+                          disabled={isChatting}
+                          style={{
+                            background: '#d2f47d',
+                            color: '#122B29',
+                            border: 'none',
+                            padding: '10px 20px',
+                            borderRadius: '10px',
+                            fontWeight: '700',
+                            fontSize: '13.5px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <Sparkles size={15} />
+                          <span>Nhờ Gemini AI tạo lịch trình</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowTemplateModal(true)}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.12)',
+                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                            color: '#ffffff',
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            fontSize: '13.5px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <Flame size={14} color="#d2f47d" />
+                          <span>Xem tất cả {publicTemplates.length} Template khác</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddForm(true)}
+                          style={{
+                            background: 'transparent',
+                            border: '1px dashed rgba(255, 255, 255, 0.35)',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            fontSize: '13.5px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          + Tự thêm hoạt động
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div className="suggested-templates-banner">
                     <div className="suggested-banner-badge">
                       <Sparkles size={12} />
-                      <span>{matched.length > 0 ? 'GỢI Ý TỰ ĐỘNG THEO ĐIỂM ĐẾN' : 'TEMPLATE LỊCH TRÌNH MẪU ĐỀ XUẤT'}</span>
+                      <span>GỢI Ý TỰ ĐỘNG THEO ĐIỂM ĐẾN</span>
                     </div>
                     <h3 className="suggested-banner-title">
-                      {matched.length > 0 
-                        ? `Lịch trình mẫu đề xuất cho ${getShortLocation(trip.destination)}`
-                        : `Gợi ý lịch trình mẫu du lịch hot nhất`}
+                      Lịch trình mẫu đề xuất cho {getShortLocation(trip.destination)}
                     </h3>
                     <p className="suggested-banner-subtitle">
                       Áp dụng các chặng và hoạt động mẫu vào ngay chuyến đi này chỉ với 1 click, hoặc tùy chỉnh thêm bớt theo ý muốn.
@@ -1019,7 +1105,9 @@ const ItineraryPage = () => {
               <div style={{textAlign: 'center', padding: 48, background: 'transparent', border: '2px dashed #E5ECEB', borderRadius: 24}}>
                 <div style={{fontSize: 48, marginBottom: 16}}>🗺️</div>
                 <h3 style={{fontSize: 20, color: '#122B29', marginBottom: 8}}>Chưa có hoạt động nào trong lịch trình</h3>
-                <p style={{color: '#6E807F', marginBottom: 20}}>Bạn có thể chọn một lịch trình mẫu ở trên để áp dụng ngay, hoặc bấm "Thêm Hoạt động" để tự lên kế hoạch thủ công.</p>
+                <p style={{color: '#6E807F', marginBottom: 20}}>
+                  Bạn có thể nhờ Trợ lý AI tạo tự động, áp dụng lịch trình mẫu hoặc bấm "Thêm Hoạt động" để tự lên kế hoạch thủ công.
+                </p>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
                   <button 
                     type="button"
