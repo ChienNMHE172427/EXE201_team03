@@ -1078,7 +1078,7 @@ const ItineraryPage = () => {
                     </p>
 
                     <div className="suggested-banner-grid">
-                      {listToDisplay.map(tpl => {
+                      {matched.map(tpl => {
                         const isMatch = matchDestination(trip.destination, tpl.destination, tpl.title);
                         const cover = getDestinationImage(tpl.destination, tpl.title, tpl.imageUrl);
                         return (
