@@ -13,16 +13,9 @@ const RegisterPage = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/auth/register', { fullName, email, password });
-      if (res.data && res.data.token) {
-        localStorage.setItem('token', res.data.token);
-        localStorage.setItem('userEmail', res.data.email);
-        localStorage.setItem('fullName', res.data.fullName || fullName);
-        if (res.data.role) localStorage.setItem('userRole', res.data.role);
-        navigate('/dashboard');
-      } else {
-        navigate('/login');
-      }
+      await api.post('/auth/register', { fullName, email, password });
+      alert('Đăng ký thành công!');
+      navigate('/login');
     } catch (err) {
       if (err.message === 'Network Error') {
         setError('Không thể kết nối đến Backend (Lỗi mạng).');
