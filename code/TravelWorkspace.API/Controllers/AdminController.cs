@@ -81,7 +81,7 @@ namespace TravelWorkspace.API.Controllers
         }
 
         [HttpDelete("users/{id}")]
-        public async Task<IActionResult> DeleteUser(int id, [FromQuery] string reason)
+        public async Task<IActionResult> DeleteUser(int id, [FromQuery] string? reason = "Yêu cầu từ quản trị viên")
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
