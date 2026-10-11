@@ -79,25 +79,46 @@ if (app.Environment.IsDevelopment())
 
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<TravelWorkspace.API.Data.AppDbContext>();
-    context.Database.Migrate();
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var connStr = config.GetConnectionString("DefaultConnection");
 
-    // Khởi tạo Admin
-    if (!context.Users.Any(u => u.Email == "admin@travelworkspace.com"))
+    // Chỉ chạy Migrate nếu không phải LocalDB trên Linux (tránh lỗi Status 139 do Trusted_Connection không hỗ trợ trên Linux)
+    bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+    bool isLocalDb = !string.IsNullOrEmpty(connStr) && (connStr.Contains("(localdb)", StringComparison.OrdinalIgnoreCase) || connStr.Contains("Trusted_Connection=True", StringComparison.OrdinalIgnoreCase));
+
+    if (isWindows || !isLocalDb)
     {
-        context.Users.Add(new TravelWorkspace.API.Models.User
+        try
         {
-            Email = "admin@travelworkspace.com",
-            FullName = "Administrator",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-            Role = "Admin",
-            CreatedAt = DateTime.UtcNow
-        });
-        context.SaveChanges();
-    }
+            var context = scope.ServiceProvider.GetRequiredService<TravelWorkspace.API.Data.AppDbContext>();
+            context.Database.Migrate();
 
-    // Tự động chèn 3 chuyến đi mẫu (Template Trips) chất lượng cao
-    await TravelWorkspace.API.Data.TripSeeder.SeedTripsAsync(context);
+            // Khởi tạo Admin
+            if (!context.Users.Any(u => u.Email == "admin@travelworkspace.com"))
+            {
+                context.Users.Add(new TravelWorkspace.API.Models.User
+                {
+                    Email = "admin@travelworkspace.com",
+                    FullName = "Administrator",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                    Role = "Admin",
+                    CreatedAt = DateTime.UtcNow
+                });
+                context.SaveChanges();
+            }
+
+            // Tự động chèn 3 chuyến đi mẫu (Template Trips) chất lượng cao
+            await TravelWorkspace.API.Data.TripSeeder.SeedTripsAsync(context);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WARNING] Database Migration skipped: {ex.Message}");
+        }
+    }
+    else
+    {
+        Console.WriteLine("[INFO] Bỏ qua Database.Migrate trên Linux do chuỗi kết nối LocalDB Windows.");
+    }
 }
 
 app.UseCors();
