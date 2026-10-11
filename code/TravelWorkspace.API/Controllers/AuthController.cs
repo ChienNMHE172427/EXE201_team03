@@ -52,6 +52,10 @@ namespace TravelWorkspace.API.Controllers
             {
                 return StatusCode(403, ex.Message);
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống khi đăng nhập: " + ex.Message });
+            }
         }
 
         [HttpPost("google")]
