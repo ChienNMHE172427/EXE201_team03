@@ -435,8 +435,6 @@ const ItineraryPage = () => {
       } catch (e2) {
         console.warn('Backend API online gặp lỗi mạng/CORS. Kích hoạt danh mục dữ liệu dự phòng offline...');
       }
-    } finally {
-      setLoadingAffiliate(false);
     }
 
     // DỰ PHÒNG CHỐNG LỖI MẠNG / CORS TRÊN MÔI TRƯỜNG ONLINE:
@@ -503,6 +501,8 @@ const ItineraryPage = () => {
     } catch (e) {
       console.error('Lỗi khởi tạo danh sách dịch vụ dự phòng:', e);
       setAffiliateServices([]);
+    } finally {
+      setLoadingAffiliate(false);
     }
   };
 
