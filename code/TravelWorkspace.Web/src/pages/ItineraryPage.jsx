@@ -416,25 +416,15 @@ const ItineraryPage = () => {
     try {
       // Tải tất cả dịch vụ đang active của danh mục để người dùng có thể lọc tức thì theo ô tìm kiếm
       const res = await api.get('/AffiliateService/all-active', {
-        params: { category: cat }
+        params: { category: cat },
+        validateStatus: (status) => status < 500
       });
-      if (res.data && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
         setAffiliateServices(res.data);
         return;
       }
     } catch (err) {
-      console.warn('Lỗi gọi /all-active, thử gọi /by-destination:', err);
-      try {
-        const fallbackRes = await api.get('/AffiliateService/by-destination', {
-          params: { category: cat }
-        });
-        if (fallbackRes.data && fallbackRes.data.length > 0) {
-          setAffiliateServices(fallbackRes.data);
-          return;
-        }
-      } catch (e2) {
-        console.warn('Backend API online gặp lỗi mạng/CORS. Kích hoạt danh mục dữ liệu dự phòng offline...');
-      }
+      // Backend online chưa có endpoint hoặc gặp sự cố kết nối, tự động kích hoạt bộ dữ liệu đối tác dự phòng
     }
 
     // DỰ PHÒNG CHỐNG LỖI MẠNG / CORS TRÊN MÔI TRƯỜNG ONLINE:
