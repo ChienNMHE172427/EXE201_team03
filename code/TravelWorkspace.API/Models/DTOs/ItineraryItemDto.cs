@@ -52,6 +52,7 @@ namespace TravelWorkspace.API.Models.DTOs
     public class GeneratePlanBRequest
     {
         public DateTime Date { get; set; }
+        public List<int>? ItemIds { get; set; }
         public string? UserApiKey { get; set; }
     }
 

@@ -348,20 +348,35 @@ namespace TravelWorkspace.API.Controllers
             var trip = await _context.Trips.FindAsync(tripId);
             if (trip == null) return NotFound("Không tìm thấy chuyến đi.");
 
-            var targetDate = request.Date.Date;
+            DateTime targetDate;
+            List<ItineraryItem> dayItems;
 
-            // 1. Lấy danh sách lịch trình của ngày hôm đó
-            var dayItems = await _context.ItineraryItems
-                .Where(i => i.TripId == tripId && i.StartTime.Date == targetDate)
-                .OrderBy(i => i.StartTime)
-                .ToListAsync();
+            // 1. Lấy danh sách lịch trình theo ItemIds (nếu frontend truyền lên) hoặc theo ngày
+            if (request.ItemIds != null && request.ItemIds.Any())
+            {
+                dayItems = await _context.ItineraryItems
+                    .Where(i => i.TripId == tripId && (request.ItemIds.Contains(i.Id) || (i.IsPlanB && i.ReplacesItemId != null && request.ItemIds.Contains(i.ReplacesItemId.Value))))
+                    .OrderBy(i => i.StartTime)
+                    .ToListAsync();
+
+                var firstOriginal = dayItems.FirstOrDefault(i => !i.IsPlanB) ?? dayItems.FirstOrDefault();
+                targetDate = firstOriginal?.StartTime.Date ?? request.Date.Date;
+            }
+            else
+            {
+                targetDate = request.Date.Date;
+                dayItems = await _context.ItineraryItems
+                    .Where(i => i.TripId == tripId && i.StartTime.Date == targetDate)
+                    .OrderBy(i => i.StartTime)
+                    .ToListAsync();
+            }
 
             if (!dayItems.Any(i => !i.IsPlanB))
             {
                 return BadRequest(new { message = $"Chưa có lịch trình hoạt động gốc nào trong ngày {targetDate:dd/MM/yyyy} để tạo Plan B." });
             }
 
-            // 2. Xóa các hoạt động Plan B cũ của ngày này (nếu có) để tạo mới sạch sẽ
+            // 2. Xóa các hoạt động Plan B cũ của chặng này (nếu có) để tạo mới sạch sẽ
             var oldPlanBItems = dayItems.Where(i => i.IsPlanB).ToList();
             if (oldPlanBItems.Any())
             {
@@ -385,6 +400,10 @@ namespace TravelWorkspace.API.Controllers
             foreach (var s in suggestions)
             {
                 var originalItem = originalDayItems.FirstOrDefault(i => i.Id == s.OriginalItemId);
+                if (originalItem == null && originalDayItems.Any())
+                {
+                    originalItem = originalDayItems.FirstOrDefault(i => !newPlanBItems.Any(p => p.ReplacesItemId == i.Id));
+                }
                 
                 var planBItem = new ItineraryItem
                 {
@@ -393,13 +412,13 @@ namespace TravelWorkspace.API.Controllers
                     Location = s.Location,
                     Destination = originalItem?.Destination ?? trip.Destination,
                     Notes = s.Notes,
-                    StartTime = s.StartTime != default ? s.StartTime : (originalItem?.StartTime ?? targetDate.AddHours(9)),
-                    EndTime = s.EndTime != default ? s.EndTime : (originalItem?.EndTime ?? targetDate.AddHours(11)),
+                    StartTime = originalItem != null ? originalItem.StartTime : (s.StartTime != default ? s.StartTime : targetDate.AddHours(9)),
+                    EndTime = originalItem != null ? originalItem.EndTime : (s.EndTime != default ? s.EndTime : targetDate.AddHours(11)),
                     Transport = s.Transport ?? "Taxi / Grab",
                     Assignee = originalItem?.Assignee ?? "Cả nhóm",
                     Status = "Chưa bắt đầu",
                     IsPlanB = true,
-                    ReplacesItemId = s.OriginalItemId,
+                    ReplacesItemId = originalItem?.Id ?? (s.OriginalItemId > 0 ? s.OriginalItemId : null),
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -409,9 +428,9 @@ namespace TravelWorkspace.API.Controllers
             _context.ItineraryItems.AddRange(newPlanBItems);
             await _context.SaveChangesAsync();
 
-            // 5. Trả về danh sách tất cả các item cập nhật của ngày hôm đó
-            var updatedDayItems = await _context.ItineraryItems
-                .Where(i => i.TripId == tripId && i.StartTime.Date == targetDate)
+            // 5. Trả về danh sách tất cả các item cập nhật của toàn bộ chuyến đi để frontend đồng bộ hoàn toàn
+            var allTripItems = await _context.ItineraryItems
+                .Where(i => i.TripId == tripId)
                 .OrderBy(i => i.StartTime)
                 .Select(i => new ItineraryItemDto
                 {
@@ -436,7 +455,7 @@ namespace TravelWorkspace.API.Controllers
             {
                 message = $"Đã kích hoạt thành công Phương án dự phòng (Plan B) cho ngày {targetDate:dd/MM/yyyy}.",
                 planBItemsCount = newPlanBItems.Count,
-                items = updatedDayItems
+                items = allTripItems
             });
         }
 

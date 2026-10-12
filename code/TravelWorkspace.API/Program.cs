@@ -155,9 +155,17 @@ using (var scope = app.Services.CreateScope())
             });
             await context.SaveChangesAsync();
         }
+        else if (!admin.IsEmailConfirmed)
+        {
+            admin.IsEmailConfirmed = true;
+            await context.SaveChangesAsync();
+        }
 
         // Tự động chèn 3 chuyến đi mẫu (Template Trips) chất lượng cao
         await TravelWorkspace.API.Data.TripSeeder.SeedTripsAsync(context);
+
+        // Tự động chèn dữ liệu mẫu dịch vụ Affiliate theo khu vực (Cư trú & Nhà xe)
+        await TravelWorkspace.API.Data.AffiliateSeeder.SeedAffiliateServicesAsync(context);
     }
     catch (Exception ex)
     {

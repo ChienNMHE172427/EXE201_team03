@@ -85,7 +85,7 @@ namespace TravelWorkspace.API.Services
             if (!user.IsActive)
                 throw new UnauthorizedAccessException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.");
 
-            if (!user.IsEmailConfirmed)
+            if (!user.IsEmailConfirmed && user.Role != "Admin")
                 throw new UnauthorizedAccessException("Vui lòng kiểm tra email và xác nhận tài khoản trước khi đăng nhập.");
 
             return new AuthResponseDto

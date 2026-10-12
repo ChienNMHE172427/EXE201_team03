@@ -21,6 +21,7 @@ namespace TravelWorkspace.API.Data
         public DbSet<PackingItem> PackingItems { get; set; }
         public DbSet<TripPhoto> TripPhotos { get; set; }
         public DbSet<PlaceReview> PlaceReviews { get; set; }
+        public DbSet<AffiliateDestinationService> AffiliateDestinationServices { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

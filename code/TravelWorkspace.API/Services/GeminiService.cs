@@ -1024,7 +1024,7 @@ Danh sách hoạt động hiện tại trong ngày của nhóm: {currentActiviti
 
 LUẬT THÉP BẮT BUỘC VỀ ĐỊA LÝ & THỜI TIẾT (GROUNDING - CHỐNG ẢO GIÁC):
 1. BẮT BUỘC: Đánh giá vị trí địa lý của '{shortDest}' trước khi gợi ý hoạt động trong nhà. TUYỆT ĐỐI KHÔNG bịa đặt dịch vụ hoặc cơ sở không tồn tại tại địa phương (Ví dụ: Không gợi ý thủy cung quy mô lớn, rạp chiếu phim IMAX ở các vùng núi/huyện vùng sâu vùng xa không có; thay vào đó hãy gợi ý bảo tàng địa phương, nhà cộng đồng, quán cafe không gian kín ngắm cảnh mưa, trải nghiệm workshop văn hóa bản địa, ẩm thực truyền thống trong nhà ấm cúng).
-2. Phân tích nghiêm ngặt lịch trình gốc: CHỈ thay thế các hoạt động ngoài trời (outdoor) dễ bị ảnh hưởng bởi mưa bão. Giữ nguyên các hoạt động vốn đã ở trong nhà hoặc không bị ảnh hưởng (nhà hàng ăn uống kín, khách sạn).
+2. Phân tích nghiêm ngặt lịch trình gốc: CHỈ thay thế các hoạt động ngoài trời (outdoor) dễ bị ảnh hưởng bởi mưa bão. Giữ nguyên các hoạt động vốn đã ở trong nhà hoặc không bị ảnh hưởng (nhà hàng ăn uống kín, khách sạn). TUYỆT ĐỐI KHÔNG thay thế hoạt động trả phòng khách sạn hoặc khởi hành di chuyển về lại điểm xuất phát.
 3. Các hoạt động thay thế trong nhà (indoor) phải ĐA DẠNG, PHÙ HỢP THỰC TẾ TẠI '{shortDest}', và TUYỆT ĐỐI KHÔNG lặp lại trong ngày.
 4. Hoạt động thay thế phải có cùng khung thời gian (startTime, endTime) tương ứng với hoạt động ngoài trời bị thay thế để lịch trình không bị gián đoạn.
 5. Gợi ý phương tiện di chuyển an toàn trong ngày mưa (ví dụ: 'Taxi / Xe đưa đón' hoặc 'Xe ô tô dịch vụ').
@@ -1110,19 +1110,30 @@ Trả về DUY NHẤT một mảng JSON thuần túy (không dùng markdown code
                 "tắm biển", "phố đi bộ", "camping", "cắm trại", "rừng" 
             };
 
-            // Lọc ra các hoạt động có khả năng ở ngoài trời
+            // Từ khóa hoạt động hậu cần/di chuyển bắt buộc không được thay thế (trả phòng, khởi hành về,...)
+            var nonReplaceableKeywords = new[] 
+            { 
+                "trả phòng", "nhận phòng", "khởi hành", "về lại", "sân bay", 
+                "ga tàu", "xe khách", "check in", "check-in", "checkout", "check-out" 
+            };
+
+            // Lọc ra các hoạt động có khả năng ở ngoài trời (loại trừ các hoạt động bắt buộc)
             var candidatesToReplace = originalItemsList
-                .Where(i => !i.IsPlanB && (
+                .Where(i => !i.IsPlanB && 
+                    !nonReplaceableKeywords.Any(k => (i.Title ?? "").Contains(k, StringComparison.OrdinalIgnoreCase)) && (
                     (!string.IsNullOrEmpty(i.Title) && outdoorKeywords.Any(k => i.Title.Contains(k, StringComparison.OrdinalIgnoreCase))) ||
                     (!string.IsNullOrEmpty(i.Notes) && outdoorKeywords.Any(k => i.Notes.Contains(k, StringComparison.OrdinalIgnoreCase))) ||
                     (!string.IsNullOrEmpty(i.Destination) && outdoorKeywords.Any(k => i.Destination.Contains(k, StringComparison.OrdinalIgnoreCase)))
                 ))
                 .ToList();
 
-            // Nếu không khớp từ khóa ngoài trời nhưng danh sách có hoạt động, chọn 1-2 hoạt động để thay thế
+            // Nếu không khớp từ khóa ngoài trời nhưng danh sách có hoạt động du lịch có thể thay thế, chọn 1-2 hoạt động
             if (!candidatesToReplace.Any() && originalItemsList.Any())
             {
-                candidatesToReplace = originalItemsList.Where(i => !i.IsPlanB).Take(2).ToList();
+                candidatesToReplace = originalItemsList
+                    .Where(i => !i.IsPlanB && !nonReplaceableKeywords.Any(k => (i.Title ?? "").Contains(k, StringComparison.OrdinalIgnoreCase)))
+                    .Take(2)
+                    .ToList();
             }
 
             // Chọn 1 trong 4 Kịch bản chuyên đề trong nhà linh hoạt, trung tính và chuẩn xác với mọi địa phương

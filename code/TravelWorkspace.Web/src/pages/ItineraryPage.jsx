@@ -9,7 +9,7 @@ import TemplateSuggestModal from '../components/TemplateSuggestModal';
 import TemplatePreviewModal from '../components/TemplatePreviewModal';
 import CloneTripModal from '../components/CloneTripModal';
 import TripNavigation from '../components/TripNavigation';
-import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb, Share2, Globe, Lock, Loader2 } from 'lucide-react';
+import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb, Share2, Globe, Lock, Loader2, ExternalLink } from 'lucide-react';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
@@ -211,6 +211,10 @@ const ItineraryPage = () => {
   });
   const [copiedFoodName, setCopiedFoodName] = useState(null);
 
+  // State Dịch vụ Đối tác Affiliate (Cư trú & Nhà xe)
+  const [affiliateServices, setAffiliateServices] = useState([]);
+  const [loadingAffiliate, setLoadingAffiliate] = useState(false);
+
   // State tìm kiếm địa điểm thực tế (Nominatim OpenStreetMap) & Tabs
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchingRealPoi, setIsSearchingRealPoi] = useState(false);
@@ -237,6 +241,7 @@ const ItineraryPage = () => {
       currentKeyword: ''
     });
     setSearchResults([]);
+    setAffiliateServices([]);
     setMapQuery('restaurants');
     setMapSearchInput('');
     setFoodModalToast(null);
@@ -343,13 +348,88 @@ const ItineraryPage = () => {
     }
   };
 
-  // Hàm mở Modal Ẩm thực và kích hoạt cả 3 luồng (OSM, AI, Google Maps)
+  // Trích xuất địa danh ngắn gọn của chặng / chuyến đi để tự động điền vào ô tìm kiếm dịch vụ
+  const extractLocationKeyword = (item, tripData) => {
+    // 1. Kiểm tra location của chặng (ví dụ: "Tam Cốc, Ninh Bình" -> lấy "Ninh Bình" hoặc "Tam Cốc")
+    if (item?.location && item.location.trim()) {
+      const parts = item.location.split(',').map(p => p.trim()).filter(Boolean);
+      return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    }
+    // 2. Kiểm tra destination của chặng
+    if (item?.destination && item.destination.trim() && item.destination !== 'Vui lòng chọn dịch vụ') {
+      const parts = item.destination.split(',').map(p => p.trim()).filter(Boolean);
+      return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    }
+    // 3. Kiểm tra địa danh chính của toàn bộ chuyến đi (trip.destination)
+    if (tripData?.destination && tripData.destination.trim()) {
+      const parts = tripData.destination.split(',').map(p => p.trim()).filter(Boolean);
+      return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    }
+    // 4. Quét từ khóa địa danh phổ biến trong tiêu đề chặng (item.title)
+    const title = (item?.title || '').toLowerCase();
+    const knownLocations = [
+      'ninh bình', 'tràng an', 'tam cốc', 'hạ long', 'quảng ninh', 'bãi cháy', 
+      'sa pa', 'sapa', 'cát bà', 'hải phòng', 'đà nẵng', 'hà nội', 'hội an', 
+      'đà lạt', 'phú quốc', 'yên tử', 'cô tô', 'nha trang'
+    ];
+    for (const loc of knownLocations) {
+      if (title.includes(loc)) {
+        return loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+    }
+    return '';
+  };
+
+  // Hàm tải danh sách dịch vụ Affiliate (Cư trú & Nhà xe) được Admin cấu hình theo địa điểm/khu vực
+  const fetchAffiliateServices = async (cat) => {
+    setLoadingAffiliate(true);
+    try {
+      // Tải tất cả dịch vụ đang active của danh mục để người dùng có thể lọc tức thì theo ô tìm kiếm
+      const res = await api.get('/AffiliateService/all-active', {
+        params: { category: cat }
+      });
+      setAffiliateServices(res.data || []);
+    } catch (err) {
+      console.warn('Lỗi gọi /all-active, thử gọi /by-destination:', err);
+      try {
+        const fallbackRes = await api.get('/AffiliateService/by-destination', {
+          params: { category: cat }
+        });
+        setAffiliateServices(fallbackRes.data || []);
+      } catch (e2) {
+        console.error('Lỗi khi tải dịch vụ affiliate:', e2);
+        setAffiliateServices([]);
+      }
+    } finally {
+      setLoadingAffiliate(false);
+    }
+  };
+
+  // Lọc danh sách dịch vụ Affiliate theo từ khóa ô tìm kiếm (tự động khớp với Ninh Bình, Hạ Long, v.v.)
+  const filteredAffiliateServices = useMemo(() => {
+    if (!affiliateServices || affiliateServices.length === 0) return [];
+    const kw = (mapSearchInput || '').trim().toLowerCase();
+    if (!kw) return affiliateServices;
+    return affiliateServices.filter(s =>
+      (s.region && s.region.toLowerCase().includes(kw)) ||
+      (s.destination && s.destination.toLowerCase().includes(kw)) ||
+      (s.name && s.name.toLowerCase().includes(kw)) ||
+      (s.notes && s.notes.toLowerCase().includes(kw))
+    );
+  }, [affiliateServices, mapSearchInput]);
+
+  // Hàm mở Modal Dịch vụ (Ăn uống, Cư trú, Nhà xe)
   const handleOpenFoodModal = (item, category = 'food') => {
+    const autoKeyword = extractLocationKeyword(item, trip);
     const targetQuery = item.location || item.destination || (trip?.destination ? `${item.title}, ${trip.destination}` : item.title);
     const formattedTitle = formatItemTitle(item.title);
     
-    setMapQuery(category === 'food' ? 'restaurants' : category === 'hotel' ? 'hotels' : 'transit station');
-    setMapSearchInput('');
+    // Tự động điền địa danh của chặng (ví dụ: Ninh Bình) lên thanh tìm kiếm
+    setMapSearchInput(autoKeyword);
+
+    const defaultQueryKeyword = category === 'hotel' ? 'hotels' : category === 'transport' ? 'transit station' : 'restaurants';
+    const initialMapQuery = autoKeyword ? `${autoKeyword} ${defaultQueryKeyword}` : defaultQueryKeyword;
+    setMapQuery(initialMapQuery);
     setActiveFoodTab('real');
 
     setFoodMapModal({
@@ -361,12 +441,20 @@ const ItineraryPage = () => {
       aiSuggestions: [],
       loadingAi: true,
       errorAi: null,
-      currentKeyword: ''
+      currentKeyword: autoKeyword
     });
 
-    const defaultSearchKeyword = category === 'hotel' ? 'khách sạn' : category === 'transport' ? 'bến xe' : 'quán ăn';
-    fetchAISuggestions('', targetQuery);
-    fetchRealPoiSuggestions(defaultSearchKeyword, targetQuery);
+    if (category === 'hotel' || category === 'transport') {
+      // Tải danh sách toàn bộ dịch vụ Affiliate để lọc linh hoạt theo từ khóa
+      fetchAffiliateServices(category);
+      // Lấy thêm dữ liệu POI từ OpenStreetMap để có thông tin tham khảo
+      const defaultSearchKeyword = category === 'hotel' ? 'khách sạn' : 'bến xe';
+      fetchRealPoiSuggestions(autoKeyword ? `${autoKeyword} ${defaultSearchKeyword}` : defaultSearchKeyword, targetQuery);
+    } else {
+      // Dịch vụ Ăn uống: Dùng Gemini AI & OSM
+      fetchAISuggestions(autoKeyword, targetQuery);
+      fetchRealPoiSuggestions(autoKeyword ? `${autoKeyword} quán ăn` : 'quán ăn', targetQuery);
+    }
   };
 
   // Thực thi tìm kiếm đồng bộ khi người dùng Enter hoặc click Thẻ lọc nhanh
@@ -597,19 +685,26 @@ const ItineraryPage = () => {
     // Nếu chưa có: Gọi API sinh Plan B
     setGeneratingPlanBDays(prev => ({ ...prev, [dateStr]: true }));
     try {
-      const sampleItem = dayItems[0];
-      const targetDate = sampleItem ? sampleItem.startTime : new Date().toISOString();
+      const sampleItem = dayItems.find(i => !i.isPlanB) || dayItems[0];
+      let targetDate = sampleItem ? sampleItem.startTime : new Date().toISOString();
+      if (dateStr && dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          targetDate = new Date(Date.UTC(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10), 12, 0, 0)).toISOString();
+        }
+      }
       
       const res = await api.post(`/trips/${selectedTripId}/itinerary/generate-plan-b`, {
-        date: targetDate
+        date: targetDate,
+        itemIds: dayItems.map(i => i.id)
       });
 
-      const updatedDayItems = res.data.items || [];
-      setItems(prevItems => {
-        // Giữ lại các item của những ngày khác
-        const otherDaysItems = prevItems.filter(i => new Date(i.startTime).toLocaleDateString('vi-VN') !== dateStr);
-        return [...otherDaysItems, ...updatedDayItems].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-      });
+      if (res.data?.items && Array.isArray(res.data.items) && res.data.items.length >= items.length) {
+        setItems(res.data.items.sort((a, b) => new Date(a.startTime) - new Date(b.startTime)));
+      } else {
+        const refetchRes = await api.get(`/Itinerary/${selectedTripId}`);
+        setItems(refetchRes.data);
+      }
 
       setPlanBActiveDays(prev => ({ ...prev, [dateStr]: true }));
     } catch (err) {
@@ -1580,11 +1675,200 @@ const ItineraryPage = () => {
 
 
 
-                {/* 3. Nội dung Tab A: Kết quả tìm kiếm thực tế (Nominatim OpenStreetMap) */}
-                
+                {/* 3. Nội dung: Phân loại theo Dịch vụ */}
+                {(foodMapModal.category === 'hotel' || foodMapModal.category === 'transport') ? (
+                  /* GIAO DIỆN DỊCH VỤ AFFILIATE ĐỐI TÁC (CƯ TRÚ & NHÀ XE) */
+                  <div className="food-tab-content">
+                    <div className="food-tab-info-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {foodMapModal.category === 'hotel' ? <Building size={16} color="#2563eb" /> : <Bus size={16} color="#16a34a" />}
+                        <strong>{foodMapModal.category === 'hotel' ? 'Dịch vụ Cư trú đối tác liên kết' : 'Dịch vụ Nhà xe & Di chuyển liên kết'}</strong>
+                        {mapSearchInput.trim() ? (
+                          <span style={{ fontSize: '12px', color: '#0284c7', background: '#e0f2fe', padding: '2px 8px', borderRadius: '12px', fontWeight: '500' }}>
+                            Khớp "{mapSearchInput}": {filteredAffiliateServices.length} kết quả
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal' }}>
+                            (Tất cả {affiliateServices.length} dịch vụ)
+                          </span>
+                        )}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {mapSearchInput.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setMapSearchInput('')}
+                            style={{
+                              background: '#f1f5f9',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              color: '#334155',
+                              padding: '3px 8px',
+                              cursor: 'pointer',
+                              fontWeight: '600'
+                            }}
+                            title="Hiển thị toàn bộ danh sách dịch vụ đối tác"
+                          >
+                            Xem tất cả ({affiliateServices.length})
+                          </button>
+                        )}
+                        {loadingAffiliate && (
+                          <span style={{ color: "#0284c7", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px", fontSize: '12px' }}>
+                            <Clock size={14} /> Đang tải...
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {loadingAffiliate ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px' }}>
+                        {[1, 2, 3].map((n) => (
+                          <div key={n} className="food-skeleton-card">
+                            <div className="skeleton-shimmer" style={{ height: '18px', width: '65%' }} />
+                            <div className="skeleton-shimmer" style={{ height: '14px', width: '90%' }} />
+                            <div className="skeleton-shimmer" style={{ height: '36px', width: '100%' }} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : filteredAffiliateServices.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px' }}>
+                        {filteredAffiliateServices.map((item, idx) => {
+                          const itemKey = `${item.name}-affiliate`;
+                          const isAdded = !!addedRestaurants[itemKey];
+                          const isAdding = addingRestaurantKey === itemKey;
+
+                          return (
+                            <article 
+                              key={item.id || idx}
+                              className={`food-card ${mapQuery === item.name ? 'preview-active' : ''}`}
+                              onClick={() => handlePreviewMap(item.name)}
+                              title="Click để xem trên bản đồ bên phải"
+                              style={{ borderLeft: `4px solid ${item.category === 'hotel' ? '#3b82f6' : '#10b981'}` }}
+                            >
+                              <div className="food-card-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                  <h4 className="food-card-name" style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 4px 0' }}>
+                                    {item.name}
+                                  </h4>
+                                  <span style={{ fontSize: '11px', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <MapPin size={11} /> {item.destination} • {item.region}
+                                  </span>
+                                </div>
+                                <span className="food-card-type-badge">
+                                  {item.category === 'hotel' ? <><Building size={12} style={{ marginRight: 4 }} /> Cư trú</> : <><Bus size={12} style={{ marginRight: 4 }} /> Nhà xe</>}
+                                </span>
+                              </div>
+
+                              {item.notes && (
+                                <p style={{ margin: '6px 0', fontSize: '12px', color: '#475569', lineHeight: '1.4' }}>
+                                  {item.notes}
+                                </p>
+                              )}
+
+                              {/* Các nút bấm basic */}
+                              <div className="food-card-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                {item.affiliateUrl && (
+                                  <a
+                                    href={item.affiliateUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-food-action"
+                                    style={{ background: '#2563eb', color: 'white', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600', padding: '6px 12px', borderRadius: '4px', fontSize: '12px' }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="Mở link đối tác để đặt phòng / vé"
+                                  >
+                                    <ExternalLink size={12} /> {item.category === 'hotel' ? 'Đặt phòng ngay ↗' : 'Đặt vé xe ngay ↗'}
+                                  </a>
+                                )}
+
+                                <button
+                                  type="button"
+                                  className={`btn-food-add ${isAdded ? 'added' : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddRestaurantToItinerary({
+                                      name: item.name,
+                                      address: `${item.destination}, ${item.region}`,
+                                      specialty: item.category === 'hotel' ? 'Cư trú' : 'Nhà xe',
+                                      reason: item.notes
+                                    }, 'affiliate');
+                                  }}
+                                  disabled={isAdding}
+                                  style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '4px' }}
+                                  title="Lưu dịch vụ này vào lịch trình chuyến đi"
+                                >
+                                  {isAdding ? 'Đang thêm...' : isAdded ? 'Đã thêm' : '➕ Thêm vào lịch trình'}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="btn-food-action focus-map"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFocusMapRestaurant(item.name);
+                                  }}
+                                  style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '4px' }}
+                                  title="Ghim bản đồ bên cạnh"
+                                >
+                                  <Map size={13} style={{ marginRight: 2 }} /> Ghim
+                                </button>
+
+                                <a
+                                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.name + ', ' + item.destination + ', ' + item.region)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-food-action"
+                                  style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', color: '#475569' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="Chỉ đường trên Google Maps"
+                                >
+                                  <Compass size={13} /> Chỉ đường
+                                </a>
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ margin: '16px', padding: '32px 16px', textAlign: 'center', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '14px', color: '#64748b', fontSize: '13px' }}>
+                        <p style={{ margin: "0 0 6px 0" }}><MapPin size={26} color="#64748b" /></p>
+                        <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: '#334155' }}>
+                          {mapSearchInput.trim() 
+                            ? `Không tìm thấy dịch vụ đối tác nào khớp với từ khóa "${mapSearchInput}"` 
+                            : `Chưa có dịch vụ ${foodMapModal.category === 'hotel' ? 'cư trú' : 'nhà xe'} nào trong hệ thống.`}
+                        </p>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '12px' }}>
+                          {mapSearchInput.trim() 
+                            ? 'Bạn có thể xóa ô tìm kiếm để xem tất cả các dịch vụ đang có trên hệ thống.' 
+                            : 'Admin có thể cấu hình thêm dịch vụ tại trang Quản trị Affiliate theo khu vực.'}
+                        </p>
+                        {mapSearchInput.trim() && affiliateServices.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setMapSearchInput('')}
+                            style={{
+                              background: '#2563eb',
+                              color: 'white',
+                              border: 'none',
+                              padding: '8px 16px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            Xem tất cả ({affiliateServices.length}) dịch vụ hiện có
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* GIAO DIỆN ẨM THỰC / ĂN UỐNG (FOOD) */
                   <div className="food-tab-content">
                     <div className="food-tab-info-bar">
-                      <span style={{display: "flex", alignItems: "center", gap: "6px"}}><Map size={16} /> Dữ liệu địa điểm thực tế xác thực từ OpenStreetMap</span>
+                      <span style={{display: "flex", alignItems: "center", gap: "6px"}}><Map size={16} /> Gợi ý ẩm thực & Quán ăn quanh địa điểm</span>
                       {isSearchingRealPoi && <span style={{ color: "#0284c7", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}><Clock size={14} /> Đang tìm...</span>}
                     </div>
 
@@ -1598,25 +1882,24 @@ const ItineraryPage = () => {
                           </div>
                         ))}
                       </div>
-                    ) : searchPoiError ? (
-                      <div style={{ margin: '16px', padding: '20px', textAlign: 'center', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', color: '#991b1b', fontSize: '13px' }}>
-                        <p style={{ margin: '0 0 10px 0', fontWeight: '600' }}>{searchPoiError}</p>
-                        <button 
-                          type="button" 
-                          className="btn-food-action" 
-                          onClick={() => fetchRealPoiSuggestions(mapSearchInput || (foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn'), foodMapModal.query)}
-                        >
-                          Thử lại
-                        </button>
-                      </div>
                     ) : searchResults.length === 0 ? (
                       <div style={{ margin: '16px', padding: '32px 16px', textAlign: 'center', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '14px', color: '#64748b', fontSize: '13px' }}>
-                        <p style={{ margin: "0 0 6px 0" }}><MapPin size={26} color="#64748b" /></p>
+                        <p style={{ margin: "0 0 6px 0" }}><Utensils size={26} color="#64748b" /></p>
                         <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: '#334155' }}>
-                          Không tìm thấy địa điểm thực tế nào cho "{mapSearchInput || foodMapModal.query}"
+                          Khám phá quán ăn quanh "{mapSearchInput || foodMapModal.query}"
                         </p>
                         <p style={{ margin: '0 0 12px 0', fontSize: '12px' }}>
-                          Hãy thử nhập tên quán cụ thể, Hãy thử nhập tên cụ thể để tìm kiếm chính xác hơn.</p>
+                          Bấm nút bên dưới để mở tìm kiếm trực tiếp trên Google Maps.
+                        </p>
+                        <a 
+                          href={`https://www.google.com/maps/search/${encodeURIComponent('quán ăn near ' + foodMapModal.query)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-food-action"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#0d9488', color: 'white', textDecoration: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '600' }}
+                        >
+                          <Compass size={16} /> Xem trên Google Maps ↗
+                        </a>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
@@ -1636,7 +1919,7 @@ const ItineraryPage = () => {
                               <div className="food-card-top">
                                 <h4 className="food-card-name">{placeName}</h4>
                                 <span className="food-card-type-badge">
-                                  {poi.type === 'restaurant' ? <><Utensils size={12} style={{marginRight: 2}} /> Nhà hàng</> : poi.type === 'cafe' ? <><Coffee size={12} style={{marginRight: 2}} /> Cafe</> : poi.type === 'bar' ? <><Beer size={12} style={{marginRight: 2}} /> Quán</> : <><MapPin size={12} style={{marginRight: 2}} /> Địa điểm thực</>}
+                                  {poi.type === 'restaurant' ? <><Utensils size={12} style={{marginRight: 2}} /> Nhà hàng</> : <><Coffee size={12} style={{marginRight: 2}} /> Quán ăn</>}
                                 </span>
                               </div>
 
@@ -1665,9 +1948,9 @@ const ItineraryPage = () => {
                                     e.stopPropagation();
                                     handleFocusMapRestaurant(placeName);
                                   }}
-                                  title="Ghim bản đồ Google Maps bên cạnh"
+                                  title="Ghim bản đồ bên cạnh"
                                 >
-                                  <><Map size={14} style={{marginRight: 4}} /> Ghim bản đồ</>
+                                  <><Map size={14} style={{marginRight: 4}} /> Ghim</>
                                 </button>
 
                                 <a
@@ -1687,6 +1970,7 @@ const ItineraryPage = () => {
                       </div>
                     )}
                   </div>
+                )}
 
               </div>
 

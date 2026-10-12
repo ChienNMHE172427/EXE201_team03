@@ -1,0 +1,272 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TravelWorkspace.API.Data;
+using TravelWorkspace.API.Models;
+
+namespace TravelWorkspace.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AffiliateServiceController : ControllerBase
+    {
+        private readonly AppDbContext _context;
+
+        public AffiliateServiceController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        /// <summary>
+        /// Lấy toàn bộ danh sách dịch vụ Affiliate (Dành cho trang Admin quản lý theo Khu Vực)
+        /// </summary>
+        [HttpGet("admin/all")]
+        public async Task<ActionResult<List<AffiliateDestinationService>>> GetAllServices()
+        {
+            var list = await _context.AffiliateDestinationServices
+                .OrderBy(s => s.Region)
+                .ThenBy(s => s.Destination)
+                .ThenBy(s => s.Category)
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        /// <summary>
+        /// Lấy danh sách các Khu vực (Tỉnh/Thành) hiện có
+        /// </summary>
+        [HttpGet("regions")]
+        public async Task<ActionResult<List<string>>> GetRegions()
+        {
+            var regions = await _context.AffiliateDestinationServices
+                .Select(s => s.Region)
+                .Distinct()
+                .OrderBy(r => r)
+                .ToListAsync();
+
+            return Ok(regions);
+        }
+
+        /// <summary>
+        /// Lấy toàn bộ danh sách dịch vụ Affiliate đang hoạt động (dành cho client tự động tìm kiếm / lọc theo từ khóa)
+        /// </summary>
+        [HttpGet("all-active")]
+        public async Task<ActionResult<List<AffiliateDestinationService>>> GetAllActive(
+            [FromQuery] string category = null)
+        {
+            var query = _context.AffiliateDestinationServices.Where(s => s.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(category) && category != "all")
+            {
+                var cleanCategory = category.Trim().ToLowerInvariant();
+                query = query.Where(s => s.Category.ToLower() == cleanCategory);
+            }
+
+            var list = await query
+                .OrderBy(s => s.Region)
+                .ThenBy(s => s.Destination)
+                .ThenBy(s => s.Name)
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        /// <summary>
+        /// Lấy danh sách dịch vụ Affiliate theo Địa điểm & Phân loại
+        /// </summary>
+        [HttpGet("by-destination")]
+        public async Task<ActionResult<List<AffiliateDestinationService>>> GetServicesByDestination(
+            [FromQuery] string destination = null,
+            [FromQuery] string category = null)
+        {
+            var query = _context.AffiliateDestinationServices.Where(s => s.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(category) && category != "all")
+            {
+                var cleanCategory = category.Trim().ToLowerInvariant();
+                query = query.Where(s => s.Category.ToLower() == cleanCategory);
+            }
+
+            var allActive = await query.ToListAsync();
+
+            if (string.IsNullOrWhiteSpace(destination))
+            {
+                return Ok(allActive);
+            }
+
+            var cleanDest = destination.Trim();
+
+            // 1. So khớp chính xác hoặc chứa trong Destination / Region / Name
+            var matched = allActive.Where(s => 
+                s.Destination.IndexOf(cleanDest, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                cleanDest.IndexOf(s.Destination, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                cleanDest.IndexOf(s.Region, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                s.Region.IndexOf(cleanDest, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                s.Name.IndexOf(cleanDest, StringComparison.OrdinalIgnoreCase) >= 0
+            ).ToList();
+
+            // 2. Nếu không thấy theo tên cụ thể, thử tìm kiếm theo các từ khóa địa danh phổ biến
+            if (!matched.Any())
+            {
+                var keywords = new[] { "Ninh Bình", "Tràng An", "Tam Cốc", "Quảng Ninh", "Hạ Long", "Bãi Cháy", "Đà Nẵng", "Bà Nà", "Mỹ Khê", "Hà Nội", "Hồ Gươm", "Đà Lạt", "Sa Pa", "Phú Quốc", "Nha Trang", "Cát Bà", "Hải Phòng" };
+                foreach (var kw in keywords)
+                {
+                    if (cleanDest.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        matched = allActive.Where(s => 
+                            s.Region.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            s.Destination.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0
+                        ).ToList();
+                        if (matched.Any()) break;
+                    }
+                }
+            }
+
+            // Tuyệt đối không fallback sang điểm khác để tránh việc đi Ninh Bình lại ra khách sạn Hạ Long
+            return Ok(matched);
+        }
+
+        /// <summary>
+        /// Admin: Tạo dịch vụ Affiliate mới
+        /// </summary>
+        [HttpPost("admin")]
+        public async Task<ActionResult<AffiliateDestinationService>> CreateService([FromBody] AffiliateDestinationService service)
+        {
+            if (string.IsNullOrWhiteSpace(service.Region))
+            {
+                return BadRequest(new { message = "Khu vực / Tỉnh thành không được để trống." });
+            }
+            if (string.IsNullOrWhiteSpace(service.Destination))
+            {
+                return BadRequest(new { message = "Tên địa điểm vui chơi không được để trống." });
+            }
+            if (string.IsNullOrWhiteSpace(service.Name))
+            {
+                return BadRequest(new { message = "Tên dịch vụ không được để trống." });
+            }
+
+            service.Region = service.Region.Trim();
+            service.Destination = service.Destination.Trim();
+            service.Name = service.Name.Trim();
+            service.Category = string.IsNullOrWhiteSpace(service.Category) ? "hotel" : service.Category.Trim().ToLowerInvariant();
+            service.CreatedAt = DateTime.UtcNow;
+            service.IsActive = true;
+
+            _context.AffiliateDestinationServices.Add(service);
+            await _context.SaveChangesAsync();
+
+            return Ok(service);
+        }
+
+        /// <summary>
+        /// Admin: Cập nhật dịch vụ Affiliate
+        /// </summary>
+        [HttpPut("admin/{id}")]
+        public async Task<ActionResult<AffiliateDestinationService>> UpdateService(int id, [FromBody] AffiliateDestinationService dto)
+        {
+            var item = await _context.AffiliateDestinationServices.FindAsync(id);
+            if (item == null)
+            {
+                return NotFound(new { message = "Không tìm thấy dịch vụ." });
+            }
+
+            item.Region = string.IsNullOrWhiteSpace(dto.Region) ? item.Region : dto.Region.Trim();
+            item.Destination = string.IsNullOrWhiteSpace(dto.Destination) ? item.Destination : dto.Destination.Trim();
+            item.Category = string.IsNullOrWhiteSpace(dto.Category) ? item.Category : dto.Category.Trim().ToLowerInvariant();
+            item.Name = string.IsNullOrWhiteSpace(dto.Name) ? item.Name : dto.Name.Trim();
+            item.AffiliateUrl = dto.AffiliateUrl ?? item.AffiliateUrl;
+            item.Price = dto.Price ?? item.Price;
+            item.Notes = dto.Notes ?? item.Notes;
+            item.Address = dto.Address ?? item.Address;
+            item.Rating = dto.Rating > 0 ? dto.Rating : item.Rating;
+            item.IsActive = dto.IsActive;
+
+            await _context.SaveChangesAsync();
+            return Ok(item);
+        }
+
+        /// <summary>
+        /// Admin: Xóa 1 dịch vụ Affiliate
+        /// </summary>
+        [HttpDelete("admin/{id}")]
+        public async Task<IActionResult> DeleteService(int id)
+        {
+            var item = await _context.AffiliateDestinationServices.FindAsync(id);
+            if (item == null)
+            {
+                return NotFound(new { message = "Không tìm thấy dịch vụ." });
+            }
+
+            _context.AffiliateDestinationServices.Remove(item);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đã xóa dịch vụ thành công." });
+        }
+
+        /// <summary>
+        /// Admin: Xóa toàn bộ 1 địa điểm trong khu vực (kèm toàn bộ dịch vụ liên kết)
+        /// </summary>
+        [HttpPost("admin/delete-destination")]
+        public async Task<IActionResult> DeleteDestination([FromBody] DeleteDestinationRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Region) || string.IsNullOrWhiteSpace(request.Destination))
+            {
+                return BadRequest(new { message = "Thiếu thông tin khu vực hoặc địa điểm." });
+            }
+
+            var items = await _context.AffiliateDestinationServices
+                .Where(s => s.Region == request.Region.Trim() && s.Destination == request.Destination.Trim())
+                .ToListAsync();
+
+            if (items.Any())
+            {
+                _context.AffiliateDestinationServices.RemoveRange(items);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { message = $"Đã xóa địa điểm {request.Destination} và các dịch vụ liên kết." });
+        }
+
+        /// <summary>
+        /// Admin: Đổi tên địa điểm trong khu vực
+        /// </summary>
+        [HttpPost("admin/rename-destination")]
+        public async Task<IActionResult> RenameDestination([FromBody] RenameDestinationRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Region) || 
+                string.IsNullOrWhiteSpace(request.OldDestination) || 
+                string.IsNullOrWhiteSpace(request.NewDestination))
+            {
+                return BadRequest(new { message = "Thông tin đổi tên không hợp lệ." });
+            }
+
+            var items = await _context.AffiliateDestinationServices
+                .Where(s => s.Region == request.Region.Trim() && s.Destination == request.OldDestination.Trim())
+                .ToListAsync();
+
+            foreach (var item in items)
+            {
+                item.Destination = request.NewDestination.Trim();
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã cập nhật tên địa điểm thành công." });
+        }
+    }
+
+    public class DeleteDestinationRequest
+    {
+        public string Region { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
+    }
+
+    public class RenameDestinationRequest
+    {
+        public string Region { get; set; } = string.Empty;
+        public string OldDestination { get; set; } = string.Empty;
+        public string NewDestination { get; set; } = string.Empty;
+    }
+}

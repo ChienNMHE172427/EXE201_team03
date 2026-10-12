@@ -25,6 +25,9 @@ const AdminSidebar = () => {
         <NavLink to="/admin/partners" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Quản lý đối tác
         </NavLink>
+        <NavLink to="/admin/affiliate-services" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+          Affiliate theo khu vực
+        </NavLink>
         <NavLink to="/admin/content" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
           Quản lý nội dung
         </NavLink>

@@ -18,6 +18,7 @@ import AdminRoute from './components/AdminRoute';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminUsers from './pages/Admin/AdminUsers';
 import AdminPartners from './pages/Admin/AdminPartners';
+import AdminAffiliateServices from './pages/Admin/AdminAffiliateServices';
 import AdminContent from './pages/Admin/AdminContent';
 import ProfilePage from './pages/ProfilePage';
 import ItineraryPage from './pages/ItineraryPage';
@@ -79,6 +80,7 @@ const App = () => {
             <Route path="/admin/dashboard" element={<Layout><AdminDashboard /></Layout>} />
             <Route path="/admin/users" element={<Layout><AdminUsers /></Layout>} />
             <Route path="/admin/partners" element={<Layout><AdminPartners /></Layout>} />
+            <Route path="/admin/affiliate-services" element={<Layout><AdminAffiliateServices /></Layout>} />
             <Route path="/admin/content" element={<Layout><AdminContent /></Layout>} />
           </Route>
 
