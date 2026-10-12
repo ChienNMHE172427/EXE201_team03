@@ -350,33 +350,61 @@ const ItineraryPage = () => {
 
   // Trích xuất địa danh ngắn gọn của chặng / chuyến đi để tự động điền vào ô tìm kiếm dịch vụ
   const extractLocationKeyword = (item, tripData) => {
-    // 1. Kiểm tra location của chặng (ví dụ: "Tam Cốc, Ninh Bình" -> lấy "Ninh Bình" hoặc "Tam Cốc")
+    // Helper làm sạch chuỗi địa danh
+    const cleanWord = (str) => {
+      if (!str) return '';
+      let s = str.trim();
+      // Bỏ các từ phụ thường gặp ở đầu
+      s = s.replace(/^(khám phá|tham quan|check-in|checkin|du lịch|đến|tới|ở|nghỉ ngơi tại|khách sạn|homestay tại|resort tại)\s+/i, '');
+      const parts = s.split(',').map(p => p.trim()).filter(Boolean);
+      return parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+    };
+
+    // 1. Kiểm tra location của chặng (ví dụ: "Tam Cốc, Ninh Bình" -> "Ninh Bình", "Bãi Cháy, Hạ Long" -> "Hạ Long")
     if (item?.location && item.location.trim()) {
-      const parts = item.location.split(',').map(p => p.trim()).filter(Boolean);
-      return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+      const loc = cleanWord(item.location);
+      if (loc) return loc;
     }
+
     // 2. Kiểm tra destination của chặng
     if (item?.destination && item.destination.trim() && item.destination !== 'Vui lòng chọn dịch vụ') {
-      const parts = item.destination.split(',').map(p => p.trim()).filter(Boolean);
-      return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+      const dest = cleanWord(item.destination);
+      if (dest) return dest;
     }
-    // 3. Kiểm tra địa danh chính của toàn bộ chuyến đi (trip.destination)
-    if (tripData?.destination && tripData.destination.trim()) {
-      const parts = tripData.destination.split(',').map(p => p.trim()).filter(Boolean);
-      return parts.length > 1 ? parts[parts.length - 1] : parts[0];
-    }
-    // 4. Quét từ khóa địa danh phổ biến trong tiêu đề chặng (item.title)
-    const title = (item?.title || '').toLowerCase();
-    const knownLocations = [
-      'ninh bình', 'tràng an', 'tam cốc', 'hạ long', 'quảng ninh', 'bãi cháy', 
-      'sa pa', 'sapa', 'cát bà', 'hải phòng', 'đà nẵng', 'hà nội', 'hội an', 
-      'đà lạt', 'phú quốc', 'yên tử', 'cô tô', 'nha trang'
-    ];
-    for (const loc of knownLocations) {
-      if (title.includes(loc)) {
-        return loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    // 3. Phân tích tiêu đề chặng (item.title)
+    if (item?.title && item.title.trim()) {
+      const titleLower = item.title.toLowerCase();
+      // Quét nhanh các địa danh phổ biến trong hệ thống
+      const knownLocations = [
+        'hạ long', 'bãi cháy', 'yên tử', 'cô tô', 'quan lạn', 'quảng ninh',
+        'ninh bình', 'tràng an', 'tam cốc', 'bái đính', 'vân long',
+        'sa pa', 'sapa', 'bắc hà', 'ô quy hồ', 'lào cai',
+        'cát bà', 'lan hạ', 'hải phòng',
+        'đà nẵng', 'hà nội', 'hội an', 'đà lạt', 'phú quốc', 'nha trang', 'huế', 'quy nhơn'
+      ];
+      for (const loc of knownLocations) {
+        if (titleLower.includes(loc)) {
+          return loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+      }
+
+      // Nếu tiêu đề dạng "Từ A đi B" hoặc "Khởi hành từ A đến B"
+      if (titleLower.includes(' đi ') || titleLower.includes(' đến ')) {
+        const parts = item.title.split(/\s+(?:đi|đến)\s+/i);
+        if (parts.length > 1) {
+          const destPart = cleanWord(parts[1]);
+          if (destPart) return destPart;
+        }
       }
     }
+
+    // 4. Lấy từ điểm đến chính của toàn bộ chuyến đi (trip.destination)
+    if (tripData?.destination && tripData.destination.trim()) {
+      const dest = cleanWord(tripData.destination);
+      if (dest) return dest;
+    }
+
     return '';
   };
 
