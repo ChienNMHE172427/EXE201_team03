@@ -10,6 +10,8 @@ import TemplatePreviewModal from '../components/TemplatePreviewModal';
 import CloneTripModal from '../components/CloneTripModal';
 import TripNavigation from '../components/TripNavigation';
 import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb, Share2, Globe, Lock, Loader2, ExternalLink } from 'lucide-react';
+import servicesData from '../servicesData.json';
+import hotelLinks from '../hotelLinks.json';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
@@ -416,20 +418,91 @@ const ItineraryPage = () => {
       const res = await api.get('/AffiliateService/all-active', {
         params: { category: cat }
       });
-      setAffiliateServices(res.data || []);
+      if (res.data && res.data.length > 0) {
+        setAffiliateServices(res.data);
+        return;
+      }
     } catch (err) {
       console.warn('Lỗi gọi /all-active, thử gọi /by-destination:', err);
       try {
         const fallbackRes = await api.get('/AffiliateService/by-destination', {
           params: { category: cat }
         });
-        setAffiliateServices(fallbackRes.data || []);
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+          setAffiliateServices(fallbackRes.data);
+          return;
+        }
       } catch (e2) {
-        console.error('Lỗi khi tải dịch vụ affiliate:', e2);
-        setAffiliateServices([]);
+        console.warn('Backend API online gặp lỗi mạng/CORS. Kích hoạt danh mục dữ liệu dự phòng offline...');
       }
     } finally {
       setLoadingAffiliate(false);
+    }
+
+    // DỰ PHÒNG CHỐNG LỖI MẠNG / CORS TRÊN MÔI TRƯỜNG ONLINE:
+    // Tự động nạp danh sách dịch vụ liên kết đối tác từ kho tĩnh nếu server online chưa kết nối được
+    try {
+      const fallbackList = [];
+      if (cat === 'hotel') {
+        // 1. Khách sạn Quảng Ninh / Hạ Long
+        const qnHotels = [
+          { name: "Halios Hotel Halong", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn trung tâm Bãi Cháy, gần bãi tắm và công viên Sun World.", rating: 4.8 },
+          { name: "Halong Lavender Hotel", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Không gian nghỉ dưỡng hiện đại, view nhìn ra Vịnh Hạ Long thoáng mát.", rating: 4.7 },
+          { name: "Halong Boutique Hotel", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn phong cách Boutique sang trọng, dịch vụ chuyên nghiệp.", rating: 4.8 },
+          { name: "Legacy Yen Tu Hotel - MGallery Collection", destination: "Yên Tử", region: "Quảng Ninh", notes: "Khu nghỉ dưỡng 5 sao đẳng cấp quốc tế dưới chân núi Yên Tử.", rating: 4.9 },
+          { name: "Yen Tu Village", destination: "Yên Tử", region: "Quảng Ninh", notes: "Làng hành hương Yên Tử mang phong cách truyền thống yên bình, mộc mạc.", rating: 4.7 }
+        ];
+        // 2. Khách sạn Ninh Bình
+        const nbHotels = [
+          { name: "Ninh Binh Hidden Charm Hotel & Resort", destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc.", rating: 4.8, url: "https://shorten.asia/JcA53PgX" },
+          { name: "Tam Coc Rice Fields Resort", destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.", rating: 4.7, url: "https://shorten.asia/S3JcJAZ6" },
+          { name: "Trang An Retreat", destination: "Quần thể Tràng An", region: "Ninh Bình", notes: "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình.", rating: 4.8, url: "https://shorten.asia/z6CQVMef" },
+          { name: "Emeralda Resort Ninh Binh", destination: "Đầm Vân Long - Gia Viễn", region: "Ninh Bình", notes: "Resort 5 sao mang đậm kiến trúc làng quê Bắc Bộ cổ kính cạnh khu bảo tồn Vân Long.", rating: 4.9, url: "https://shorten.asia/429ha1PE" }
+        ];
+        // 3. Khách sạn Sa Pa & Cát Bà
+        const sapaHotels = [
+          { name: "KK Sapa Hotel", destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao sang trọng nhìn thẳng ra Thung Lũng Mường Hoa.", rating: 4.9 },
+          { name: "Pao's Sapa Leisure Hotel", destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao đẳng cấp ôm trọn triền đồi, hồ bơi nước nóng trong nhà.", rating: 4.9 },
+          { name: "Khách sạn Giấc Mơ Cát Bà", destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.", rating: 4.7 }
+        ];
+
+        [...qnHotels, ...nbHotels, ...sapaHotels].forEach((h, idx) => {
+          fallbackList.push({
+            id: `fallback-hotel-${idx}`,
+            name: h.name,
+            category: 'hotel',
+            destination: h.destination,
+            region: h.region,
+            notes: h.notes,
+            rating: h.rating,
+            affiliateUrl: h.url || hotelLinks[h.name] || 'https://shorten.asia/JcA53PgX'
+          });
+        });
+      } else if (cat === 'transport') {
+        const transList = [
+          { name: "Xe Limousine Tràng An VIP (Hà Nội - Ninh Bình)", destination: "TP. Ninh Bình & Điểm du lịch", region: "Ninh Bình", notes: "Xe Limousine 9-11 chỗ ghế massage cao cấp, đón trả tận nơi.", rating: 4.9, url: "https://shorten.asia/bVfmwTFr" },
+          { name: "Xe Limousine Ninh Bình Excursion Transport", destination: "TP. Ninh Bình & Điểm du lịch", region: "Ninh Bình", notes: "Tuyến xe du lịch cao cấp hàng ngày, đón trả tại phố cổ Hà Nội và Ninh Bình.", rating: 4.8, url: "https://shorten.asia/pGCwVAfK" },
+          { name: "Nhà xe Duy Khang Limousine", destination: "TP. Ninh Bình & Điểm du lịch", region: "Ninh Bình", notes: "Tần suất 60 phút/chuyến, chuyên tuyến Hà Nội - Ninh Bình trả tận điểm lưu trú.", rating: 4.7, url: "https://shorten.asia/s8QFsSzn" },
+          { name: "Xe Limousine Phúc Xuyên (Hà Nội - Hạ Long)", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Xe VIP đón trả tận nơi tại Bãi Cháy và Tuần Châu.", rating: 4.8, url: "https://shorten.asia/bVfmwTFr" },
+          { name: "Xe Vân Đồn Xanh Limousine", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Chạy cao tốc Hà Nội - Hải Phòng - Hạ Long êm ái, tiện nghi.", rating: 4.8, url: "https://shorten.asia/s8QFsSzn" }
+        ];
+        transList.forEach((t, idx) => {
+          fallbackList.push({
+            id: `fallback-trans-${idx}`,
+            name: t.name,
+            category: 'transport',
+            destination: t.destination,
+            region: t.region,
+            notes: t.notes,
+            rating: t.rating,
+            affiliateUrl: t.url
+          });
+        });
+      }
+      setAffiliateServices(fallbackList);
+    } catch (e) {
+      console.error('Lỗi khởi tạo danh sách dịch vụ dự phòng:', e);
+      setAffiliateServices([]);
     }
   };
 
