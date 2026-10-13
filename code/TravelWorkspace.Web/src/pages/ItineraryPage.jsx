@@ -566,54 +566,82 @@ const ItineraryPage = () => {
 
       // 2. DỊCH VỤ CƯ TRÚ (HOTEL)
       if (cat === 'hotel') {
-        const res = await api.get('/AffiliateService/all-active', {
-          params: { category: cat },
-          validateStatus: (status) => status < 500
-        });
-        if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-          setAffiliateServices(res.data);
-          return;
+        let backendHotels = [];
+        try {
+          const res = await api.get('/AffiliateService/all-active', {
+            params: { category: cat },
+            validateStatus: (status) => status < 500
+          });
+          if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+            backendHotels = res.data;
+          }
+        } catch (apiErr) {
+          console.warn('API /all-active hotel không phản hồi, nạp danh mục khách sạn chuẩn:', apiErr);
         }
+
+        // KHO DỮ LIỆU KHÁCH SẠN ĐẦY ĐỦ CÁC VÙNG DU LỊCH TRỌNG ĐIỂM
+        const fullHotelList = [
+          // Ninh Bình
+          { id: 'nb-hotel-1', name: "Ninh Binh Hidden Charm Hotel & Resort", category: 'hotel', destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc, hồ bơi ngoài trời.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
+          { id: 'nb-hotel-2', name: "Tam Coc Rice Fields Resort", category: 'hotel', destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.", rating: 4.7, affiliateUrl: "https://shorten.asia/S3JcJAZ6" },
+          { id: 'nb-hotel-3', name: "Trang An Retreat", category: 'hotel', destination: "Quần thể Tràng An", region: "Ninh Bình", notes: "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình, có hồ bơi nhìn ra núi.", rating: 4.8, affiliateUrl: "https://shorten.asia/z6CQVMef" },
+          { id: 'nb-hotel-4', name: "Emeralda Resort Ninh Binh", category: 'hotel', destination: "Đầm Vân Long - Gia Viễn", region: "Ninh Bình", notes: "Resort 5 sao mang đậm kiến trúc cung đình và làng quê Bắc Bộ cổ kính cạnh khu bảo tồn Vân Long.", rating: 4.9, affiliateUrl: "https://shorten.asia/429ha1PE" },
+          { id: 'nb-hotel-5', name: "The Reed Hotel Ninh Binh", category: 'hotel', destination: "TP. Ninh Bình & Trung tâm", region: "Ninh Bình", notes: "Khách sạn 4 sao trung tâm thành phố Ninh Bình, dịch vụ cao cấp và ẩm thực phong phú.", rating: 4.7, affiliateUrl: "https://shorten.asia/JcA53PgX" },
+          { id: 'nb-hotel-6', name: "Ninh Binh Legend Hotel", category: 'hotel', destination: "TP. Ninh Bình & Tràng An", region: "Ninh Bình", notes: "Khách sạn 5 sao tiêu chuẩn quốc tế với hồ bơi vô cực và view non nước hữu tình.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
+
+          // Quảng Ninh / Hạ Long
+          { id: 'qn-hotel-1', name: "Halios Hotel Halong", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn trung tâm Bãi Cháy, gần bãi tắm và công viên Sun World.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
+          { id: 'qn-hotel-2', name: "Halong Lavender Hotel", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Không gian nghỉ dưỡng hiện đại, view nhìn ra Vịnh Hạ Long thoáng mát.", rating: 4.7, affiliateUrl: "https://shorten.asia/S3JcJAZ6" },
+          { id: 'qn-hotel-3', name: "Halong Boutique Hotel", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn phong cách Boutique sang trọng, dịch vụ chuyên nghiệp.", rating: 4.8, affiliateUrl: "https://shorten.asia/z6CQVMef" },
+          { id: 'qn-hotel-4', name: "Bảo Ngọc Hotel 2", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn tiện nghi, giá hợp lý, thuận tiện di chuyển ra bến tàu.", rating: 4.6, affiliateUrl: "https://shorten.asia/KqEEGVvj" },
+          { id: 'qn-hotel-5', name: "Legacy Yen Tu Hotel - MGallery Collection", category: 'hotel', destination: "Yên Tử", region: "Quảng Ninh", notes: "Khu nghỉ dưỡng 5 sao đẳng cấp quốc tế dưới chân núi Yên Tử, kiến trúc cung đình thời Trần.", rating: 4.9, affiliateUrl: "https://shorten.asia/429ha1PE" },
+          { id: 'qn-hotel-6', name: "Yen Tu Village", category: 'hotel', destination: "Yên Tử", region: "Quảng Ninh", notes: "Làng hành hương Yên Tử mang phong cách truyền thống yên bình, mộc mạc.", rating: 4.7, affiliateUrl: "https://shorten.asia/ezkBASAC" },
+          { id: 'qn-hotel-7', name: "Coto Eco Lodge", category: 'hotel', destination: "Đảo Cô Tô", region: "Quảng Ninh", notes: "Khu nhà gỗ sinh thái độc đáo bên bãi biển Hồng Vàn, không gian yên tĩnh.", rating: 4.8, affiliateUrl: "https://shorten.asia/aJNpXRf4" },
+          { id: 'qn-hotel-8', name: "Coto Center Homestay", category: 'hotel', destination: "Đảo Cô Tô", region: "Quảng Ninh", notes: "Homestay ngay trung tâm thị trấn Cô Tô, gần chợ hải sản và bãi biển.", rating: 4.8, affiliateUrl: "https://shorten.asia/TADrDdnM" },
+          { id: 'qn-hotel-9', name: "Angsana Quan Lan Ha Long Bay", category: 'hotel', destination: "Quan Lạn - Minh Châu", region: "Quảng Ninh", notes: "Resort cao cấp bên bờ biển Quan Lạn hoang sơ, hồ bơi và tiện ích 5 sao.", rating: 4.9, affiliateUrl: "https://shorten.asia/h6kTTSe3" },
+
+          // Sa Pa / Lào Cai
+          { id: 'sp-hotel-1', name: "KK Sapa Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao sang trọng nhìn thẳng ra Thung Lũng Mường Hoa và Fansipan.", rating: 4.9, affiliateUrl: "https://shorten.asia/4mUeh5BN" },
+          { id: 'sp-hotel-2', name: "Pao's Sapa Leisure Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao đẳng cấp ôm trọn triền đồi, hồ bơi nước nóng trong nhà.", rating: 4.9, affiliateUrl: "https://shorten.asia/6pfAt6qB" },
+          { id: 'sp-hotel-3', name: "DeLaSol Sapa Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn tiện nghi trung tâm Sa Pa, view thung lũng mây bồng bềnh.", rating: 4.8, affiliateUrl: "https://shorten.asia/qruA6GRK" },
+          { id: 'sp-hotel-4', name: "Ville De Mont Mountain Resort", category: 'hotel', destination: "Thung lũng Mường Hoa", region: "Sa Pa / Lào Cai", notes: "Resort biệt thự biệt lập giữa rừng thông ở độ cao 1.550m ngắm trọn biển mây.", rating: 4.9, affiliateUrl: "https://shorten.asia/myJrNyWG" },
+
+          // Hải Phòng / Cát Bà
+          { id: 'hp-hotel-1', name: "Khách sạn Giấc Mơ Cát Bà", category: 'hotel', destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.", rating: 4.7, affiliateUrl: "https://shorten.asia/bVfmwTFr" },
+          { id: 'hp-hotel-2', name: "CatBa BackPackers Hostel & Pool Bar", category: 'hotel', destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Hostel phong cách trẻ trung năng động có hồ bơi ngoài trời và quầy bar.", rating: 4.8, affiliateUrl: "https://shorten.asia/s8QFsSzn" },
+          { id: 'hp-hotel-3', name: "Cat Ba Wonder Hotel", category: 'hotel', destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Khách sạn hiện đại ngay mặt đường chính thị trấn Cát Bà, gần bãi tắm Cát Cò.", rating: 4.7, affiliateUrl: "https://shorten.asia/pGCwVAfK" },
+
+          // Hà Giang & Cao Bằng
+          { id: 'hg-hotel-1', name: "Đồng Văn Eco Stone House", category: 'hotel', destination: "Phố cổ Đồng Văn", region: "Hà Giang", notes: "Nhà đá truyền thống của người H'Mông độc đáo giữa lòng phố cổ Đồng Văn.", rating: 4.8, affiliateUrl: "https://shorten.asia/STy4Pakb" },
+          { id: 'hg-hotel-2', name: "H'mong Village Resort", category: 'hotel', destination: "Quản Bạ", region: "Hà Giang", notes: "Khu nghỉ dưỡng bungalow quẩy tấu độc đáo giữa núi rừng Quản Bạ hùng vĩ.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/H'mong+Village+Resort+Ha+Giang" },
+          { id: 'cb-hotel-1', name: "Bản Giốc Resort", category: 'hotel', destination: "Thác Bản Giốc & Trùng Khánh", region: "Cao Bằng", notes: "Resort nghỉ dưỡng view nhìn trực diện dòng thác Bản Giốc hùng vĩ.", rating: 4.8, affiliateUrl: "https://shorten.asia/Nck74KXF" },
+          { id: 'cb-hotel-2', name: "Max Boutique Hotel Cao Bằng", category: 'hotel', destination: "Trung tâm TP. Cao Bằng", region: "Cao Bằng", notes: "Khách sạn tiện nghi sang trọng ngay trung tâm thành phố Cao Bằng.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/Max+Boutique+Hotel+Cao+Bang" },
+
+          // Đà Nẵng, Hà Nội, Hội An, Đà Lạt
+          { id: 'dn-hotel-1', name: "Novotel Danang Premier Han River", category: 'hotel', destination: "Bạch Đằng, Hải Châu", region: "Đà Nẵng", notes: "Khách sạn 5 sao biểu tượng ven sông Hàn với quán bar tầng thượng ngắm trọn thành phố.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/Novotel+Danang+Premier+Han+River" },
+          { id: 'dn-hotel-2', name: "TMS Hotel Da Nang Beach", category: 'hotel', destination: "Võ Nguyên Giáp, Mỹ Khê", region: "Đà Nẵng", notes: "Khách sạn 5 sao sát bờ biển Mỹ Khê với hồ bơi vô cực trên tầng thượng cực đẹp.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/TMS+Hotel+Da+Nang+Beach" },
+          { id: 'hn-hotel-1', name: "The Oriental Jade Hotel", category: 'hotel', destination: "Hàng Trống, Hoàn Kiếm", region: "Hà Nội", notes: "Khách sạn Boutique 5 sao sang trọng ngay sát Hồ Gươm và phố cổ Hà Nội.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/The+Oriental+Jade+Hotel+Hanoi" },
+          { id: 'hn-hotel-2', name: "Sofitel Legend Metropole Hanoi", category: 'hotel', destination: "Ngô Quyền, Hoàn Kiếm", region: "Hà Nội", notes: "Khách sạn 5 sao lịch sử sang trọng bậc nhất thủ đô phong cách Pháp cổ.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/Sofitel+Legend+Metropole+Hanoi" },
+          { id: 'ha-hotel-1', name: "La Siesta Hoi An Resort & Spa", category: 'hotel', destination: "Thanh Hà, Phố Cổ", region: "Hội An", notes: "Resort boutique đẳng cấp với khu vườn nhiệt đới và 4 hồ bơi tuyệt đẹp.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/La+Siesta+Hoi+An+Resort" },
+          { id: 'dl-hotel-1', name: "Colline Hotel Dalat", category: 'hotel', destination: "Phan Bội Châu, Trung tâm", region: "Đà Lạt", notes: "Khách sạn kiến trúc châu Âu hiện đại bậc nhất ngay cạnh chợ Đà Lạt.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/Colline+Hotel+Dalat" }
+        ];
+
+        // Gộp dữ liệu an toàn từ backend với danh mục chuẩn (không trùng tên)
+        const combined = [...backendHotels];
+        const existingNames = new Set(backendHotels.map(h => (h.name || '').toLowerCase().trim()));
+        fullHotelList.forEach(h => {
+          if (!existingNames.has((h.name || '').toLowerCase().trim())) {
+            combined.push(h);
+          }
+        });
+
+        setAffiliateServices(combined);
+        return;
       }
 
       // KHO DỮ LIỆU ĐỊA ĐIỂM THỰC TẾ (100% NHÀ HÀNG & DỊCH VỤ THẬT THEO GOOGLE MAPS)
       const fallbackList = [];
-      if (cat === 'hotel') {
-        // Khách sạn Quảng Ninh / Hạ Long
-        const qnHotels = [
-          { name: "Halios Hotel Halong", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn trung tâm Bãi Cháy, gần bãi tắm và công viên Sun World.", rating: 4.8 },
-          { name: "Halong Lavender Hotel", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Không gian nghỉ dưỡng hiện đại, view nhìn ra Vịnh Hạ Long thoáng mát.", rating: 4.7 },
-          { name: "Halong Boutique Hotel", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn phong cách Boutique sang trọng, dịch vụ chuyên nghiệp.", rating: 4.8 },
-          { name: "Legacy Yen Tu Hotel - MGallery Collection", destination: "Yên Tử", region: "Quảng Ninh", notes: "Khu nghỉ dưỡng 5 sao đẳng cấp quốc tế dưới chân núi Yên Tử.", rating: 4.9 },
-          { name: "Yen Tu Village", destination: "Yên Tử", region: "Quảng Ninh", notes: "Làng hành hương Yên Tử mang phong cách truyền thống yên bình, mộc mạc.", rating: 4.7 }
-        ];
-        // Khách sạn Ninh Bình
-        const nbHotels = [
-          { name: "Ninh Binh Hidden Charm Hotel & Resort", destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc.", rating: 4.8, url: "https://shorten.asia/JcA53PgX" },
-          { name: "Tam Coc Rice Fields Resort", destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.", rating: 4.7, url: "https://shorten.asia/S3JcJAZ6" },
-          { name: "Trang An Retreat", destination: "Quần thể Tràng An", region: "Ninh Bình", notes: "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình.", rating: 4.8, url: "https://shorten.asia/z6CQVMef" },
-          { name: "Emeralda Resort Ninh Binh", destination: "Đầm Vân Long - Gia Viễn", region: "Ninh Bình", notes: "Resort 5 sao mang đậm kiến trúc làng quê Bắc Bộ cổ kính cạnh khu bảo tồn Vân Long.", rating: 4.9, url: "https://shorten.asia/429ha1PE" }
-        ];
-        // Khách sạn Sa Pa & Cát Bà
-        const sapaHotels = [
-          { name: "KK Sapa Hotel", destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao sang trọng nhìn thẳng ra Thung Lũng Mường Hoa.", rating: 4.9 },
-          { name: "Pao's Sapa Leisure Hotel", destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao đẳng cấp ôm trọn triền đồi, hồ bơi nước nóng trong nhà.", rating: 4.9 },
-          { name: "Khách sạn Giấc Mơ Cát Bà", destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.", rating: 4.7 }
-        ];
-
-        [...qnHotels, ...nbHotels, ...sapaHotels].forEach((h, idx) => {
-          fallbackList.push({
-            id: `fallback-hotel-${idx}`,
-            name: h.name,
-            category: 'hotel',
-            destination: h.destination,
-            region: h.region,
-            notes: h.notes,
-            rating: h.rating,
-            affiliateUrl: h.url || hotelLinks[h.name] || 'https://shorten.asia/JcA53PgX'
-          });
-        });
-      } else if (cat === 'food') {
+      if (cat === 'food') {
         // 1. Quán ăn thực tế từ servicesData.json (Hạ Long, Ninh Bình, Sa Pa, Hà Giang, Cao Bằng)
         if (Array.isArray(servicesData)) {
           const rawRestaurants = servicesData.filter(x => x.type === 'NHÀ HÀNG' || x.category === 'Ăn uống');
@@ -700,18 +728,54 @@ const ItineraryPage = () => {
     }
   };
 
+  // Chuẩn hóa chuỗi bỏ dấu tiếng Việt để tìm kiếm không phụ thuộc dấu
+  const removeDiacritics = (str) => {
+    if (!str) return '';
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+  };
+
   // Lọc danh sách dịch vụ Affiliate theo từ khóa ô tìm kiếm (tự động khớp với Ninh Bình, Hạ Long, v.v.)
   const filteredAffiliateServices = useMemo(() => {
     if (!affiliateServices || affiliateServices.length === 0) return [];
     const kw = (mapSearchInput || '').trim().toLowerCase();
     if (!kw) return affiliateServices;
-    return affiliateServices.filter(s =>
-      (s.region && s.region.toLowerCase().includes(kw)) ||
-      (s.destination && s.destination.toLowerCase().includes(kw)) ||
-      (s.name && s.name.toLowerCase().includes(kw)) ||
-      (s.notes && s.notes.toLowerCase().includes(kw))
-    );
+    const kwNorm = removeDiacritics(kw);
+    return affiliateServices.filter(s => {
+      const targetStr = `${s.name || ''} ${s.destination || ''} ${s.region || ''} ${s.notes || ''}`.toLowerCase();
+      const targetNorm = removeDiacritics(targetStr);
+      return targetStr.includes(kw) || targetNorm.includes(kwNorm);
+    });
   }, [affiliateServices, mapSearchInput]);
+
+  // Helper tạo URL Google Maps Embed chuẩn xác (không bao giờ bị xám hay trắng bản đồ)
+  const getGoogleMapsEmbedUrl = () => {
+    const loc = (foodMapModal.currentKeyword || extractLocationKeyword(foodMapModal.activityItem, trip) || trip?.destination || '').trim();
+    const categoryDefault = foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn, nhà hàng';
+    let q = (mapQuery || '').trim();
+    if (!q || q === 'hotels' || q === 'restaurants' || q === 'transit station' || q === 'khách sạn' || q === 'quán ăn' || q === 'bến xe') {
+      q = categoryDefault;
+    }
+    let finalSearch = q;
+    if (loc && !q.toLowerCase().includes(loc.toLowerCase())) {
+      finalSearch = `${q}, ${loc}`;
+    }
+    return `https://maps.google.com/maps?q=${encodeURIComponent(finalSearch)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  };
+
+  // Helper tạo URL Google Maps tìm kiếm mở tab mới
+  const getGoogleMapsSearchUrl = () => {
+    const loc = (foodMapModal.currentKeyword || extractLocationKeyword(foodMapModal.activityItem, trip) || trip?.destination || '').trim();
+    const categoryDefault = foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn';
+    let q = (mapSearchInput || mapQuery || '').trim();
+    if (!q || q === 'hotels' || q === 'restaurants' || q === 'transit station' || q === 'khách sạn' || q === 'quán ăn' || q === 'bến xe') {
+      q = categoryDefault;
+    }
+    let finalSearch = q;
+    if (loc && !q.toLowerCase().includes(loc.toLowerCase())) {
+      finalSearch = `${q}, ${loc}`;
+    }
+    return `https://www.google.com/maps/search/${encodeURIComponent(finalSearch)}`;
+  };
 
   // Hàm mở Modal Dịch vụ (Ăn uống, Cư trú, Nhà xe)
   const handleOpenFoodModal = (item, category = 'food') => {
@@ -722,8 +786,8 @@ const ItineraryPage = () => {
     // Tự động điền địa danh của chặng (ví dụ: Ninh Bình) lên thanh tìm kiếm
     setMapSearchInput(autoKeyword);
 
-    const defaultQueryKeyword = category === 'hotel' ? 'hotels' : category === 'transport' ? 'transit station' : 'restaurants';
-    const initialMapQuery = autoKeyword ? `${autoKeyword} ${defaultQueryKeyword}` : defaultQueryKeyword;
+    const defaultQueryKeyword = category === 'hotel' ? 'khách sạn' : category === 'transport' ? 'bến xe' : 'quán ăn';
+    const initialMapQuery = autoKeyword ? `${defaultQueryKeyword} ${autoKeyword}` : defaultQueryKeyword;
     setMapQuery(initialMapQuery);
     setActiveFoodTab('real');
 
@@ -742,7 +806,7 @@ const ItineraryPage = () => {
     // Tải danh sách địa điểm thực tế chuẩn xác (Khách sạn, Nhà xe hoặc Quán ăn)
     fetchAffiliateServices(category);
     const defaultSearchKeyword = category === 'hotel' ? 'khách sạn' : category === 'transport' ? 'bến xe' : 'quán ăn';
-    fetchRealPoiSuggestions(autoKeyword ? `${autoKeyword} ${defaultSearchKeyword}` : defaultSearchKeyword, targetQuery, category);
+    fetchRealPoiSuggestions(autoKeyword ? `${defaultSearchKeyword} ${autoKeyword}` : defaultSearchKeyword, targetQuery, category);
     if (category === 'food') {
       fetchAISuggestions(autoKeyword, targetQuery);
     }
@@ -751,15 +815,14 @@ const ItineraryPage = () => {
   // Thực thi tìm kiếm đồng bộ khi người dùng Enter hoặc click Thẻ lọc nhanh
   const handlePerformSearch = (keyword) => {
     const trimmed = (keyword || '').trim();
-    const defaultMapQuery = foodMapModal.category === 'hotel' ? 'hotels' : foodMapModal.category === 'transport' ? 'transit station' : 'restaurants';
+    const defaultMapQuery = foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn';
     const queryForMap = trimmed || defaultMapQuery;
 
     // Luồng 1 (Tức thì): Cập nhật URL bản đồ iframe Google Maps sang từ khóa mới
     setMapQuery(queryForMap);
 
     // Luồng 2 (Nominatim): Tìm kiếm địa điểm thật
-    const defaultSearchKeyword = foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn';
-    fetchRealPoiSuggestions(trimmed || defaultSearchKeyword, foodMapModal.query, foodMapModal.category);
+    fetchRealPoiSuggestions(trimmed || defaultMapQuery, foodMapModal.query, foodMapModal.category);
 
     // Luồng 3 (AI): Lấy gợi ý phân tích từ Gemini
     fetchAISuggestions(trimmed, foodMapModal.query);
@@ -2035,7 +2098,7 @@ const ItineraryPage = () => {
                           const borderColor = foodMapModal.category === 'hotel' ? '#3b82f6' : foodMapModal.category === 'transport' ? '#16a34a' : '#ea580c';
                           const isHotel = foodMapModal.category === 'hotel' || item.category === 'hotel';
                           const isTransport = foodMapModal.category === 'transport' || item.category === 'transport';
-                          const actionUrl = item.affiliateUrl || `https://www.google.com/maps/search/${encodeURIComponent(item.name + ' near ' + (item.destination || item.region || foodMapModal.query))}`;
+                          const actionUrl = item.affiliateUrl || `https://www.google.com/maps/search/${encodeURIComponent(item.name + (item.destination ? ', ' + item.destination : (item.region ? ', ' + item.region : '')))}`;
 
                           return (
                             <article 
@@ -2184,7 +2247,7 @@ const ItineraryPage = () => {
                             </button>
                           )}
                           <a
-                            href={`https://www.google.com/maps/search/${encodeURIComponent((mapSearchInput || (foodMapModal.category === 'food' ? 'quán ăn' : foodMapModal.category === 'hotel' ? 'khách sạn' : 'bến xe')) + ' near ' + foodMapModal.query)}`}
+                            href={getGoogleMapsSearchUrl()}
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{
@@ -2212,14 +2275,15 @@ const ItineraryPage = () => {
               <div className="food-map-panel">
                 <div className="food-map-panel-bar">
                   <span>
-                    Bản đồ: <strong>{mapQuery === 'restaurants' ? 'Tất cả quán ăn' : mapQuery === 'hotels' ? 'Tất cả khách sạn' : mapQuery === 'transit station' ? 'Tất cả bến xe' : mapQuery}</strong> quanh <em>{foodMapModal.query}</em>
+                    Bản đồ: <strong>{mapQuery === 'restaurants' || mapQuery === 'quán ăn' ? 'Tất cả quán ăn' : mapQuery === 'hotels' || mapQuery === 'khách sạn' ? 'Tất cả khách sạn' : mapQuery === 'transit station' || mapQuery === 'bến xe' ? 'Tất cả bến xe' : mapQuery}</strong> quanh <em>{foodMapModal.currentKeyword || extractLocationKeyword(foodMapModal.activityItem, trip) || trip?.destination || 'khu vực'}</em>
                   </span>
-                  {mapQuery !== 'restaurants' && (
+                  {mapQuery && !['restaurants', 'quán ăn', 'hotels', 'khách sạn', 'transit station', 'bến xe'].includes(mapQuery.toLowerCase().trim()) && (
                     <button 
                       type="button" 
                       onClick={() => {
-                        setMapSearchInput('');
-                          handlePerformSearch('');
+                        const loc = foodMapModal.currentKeyword || extractLocationKeyword(foodMapModal.activityItem, trip) || trip?.destination || '';
+                        setMapSearchInput(loc);
+                        handlePerformSearch(foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn');
                       }}
                       className="food-map-reset-btn"
                     >
@@ -2231,7 +2295,7 @@ const ItineraryPage = () => {
                 <div className="food-map-iframe-wrapper">
                   <iframe
                     title={`Bản đồ ${foodMapModal.category === 'hotel' ? 'khách sạn' : foodMapModal.category === 'transport' ? 'bến xe' : 'quán ăn'} gần đây`}
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent((mapQuery || (foodMapModal.category === 'food' ? 'quán ăn, nhà hàng' : foodMapModal.category === 'hotel' ? 'hotels' : 'transit station')) + ' near ' + foodMapModal.query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    src={getGoogleMapsEmbedUrl()}
                     className="food-map-iframe"
                     loading="lazy"
                     allowFullScreen
@@ -2243,7 +2307,7 @@ const ItineraryPage = () => {
             <div className="food-map-modal-footer">
               <span>💡 Click thẻ để ghim vị trí trên bản đồ. Bấm <strong>"➕ Thêm vào lịch trình"</strong> để đưa vào kế hoạch chuyến đi.</span>
               <a 
-                href={`https://www.google.com/maps/search/${encodeURIComponent((mapQuery || (foodMapModal.category === 'food' ? 'quán ăn' : foodMapModal.category === 'hotel' ? 'hotels' : 'transit station')) + ' near ' + foodMapModal.query)}`} 
+                href={getGoogleMapsSearchUrl()} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 style={{ color: '#0d9488', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
