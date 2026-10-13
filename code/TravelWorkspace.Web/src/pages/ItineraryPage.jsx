@@ -506,7 +506,66 @@ const ItineraryPage = () => {
   const fetchAffiliateServices = async (cat) => {
     setLoadingAffiliate(true);
     try {
-      if (cat === 'hotel' || cat === 'transport') {
+      // 1. DỊCH VỤ NHÀ XE (TRANSPORT) - Tích hợp Vexere chuẩn 5 khu vực du lịch trọng điểm
+      if (cat === 'transport') {
+        const transList = [
+          {
+            id: 'vexere-qn',
+            name: 'Nhà xe Quảng Ninh',
+            category: 'transport',
+            destination: 'Hạ Long, Bãi Cháy, Cô Tô, Vân Đồn, Cẩm Phả, Yên Tử',
+            region: 'Quảng Ninh',
+            notes: 'Xe khách & Limousine VIP Hà Nội ↔ Quảng Ninh qua Vexere. Đón trả tận nơi tại Hạ Long, Bãi Cháy, Tuần Châu, Vân Đồn, Cảng Ao Tiên.',
+            rating: 4.9,
+            affiliateUrl: 'https://shorten.asia/BmJJ5wE9'
+          },
+          {
+            id: 'vexere-lc',
+            name: 'Nhà xe Lào Cai',
+            category: 'transport',
+            destination: 'Sa Pa, Fansipan, Bắc Hà, Cát Cát, Mường Hoa, Ô Quy Hồ',
+            region: 'Lào Cai',
+            notes: 'Xe cabin cung điện đôi, xe giường nằm cao cấp & Limousine VIP Hà Nội ↔ Sa Pa, Lào Cai qua Vexere. Đón trả tận nơi các khách sạn Sa Pa.',
+            rating: 4.9,
+            affiliateUrl: 'https://shorten.asia/QGuJ9Fue'
+          },
+          {
+            id: 'vexere-nb',
+            name: 'Nhà xe Ninh Bình',
+            category: 'transport',
+            destination: 'Tràng An, Tam Cốc, Bích Động, Bái Đính, Hang Múa, Hoa Lư',
+            region: 'Ninh Bình',
+            notes: 'Xe Limousine 9-11 chỗ ghế massage cao cấp Hà Nội ↔ Ninh Bình qua Vexere. Chạy cao tốc êm ái, tần suất 60 phút/chuyến, trả tận điểm lưu trú.',
+            rating: 4.9,
+            affiliateUrl: 'https://shorten.asia/R3cnEDct'
+          },
+          {
+            id: 'vexere-hg',
+            name: 'Nhà xe Hà Giang',
+            category: 'transport',
+            destination: 'Đồng Văn, Mã Pí Lèng, Lũng Cú, Mèo Vạc, Hoàng Su Phì, Sông Nho Quế',
+            region: 'Hà Giang',
+            notes: 'Xe cabin cung điện & giường nằm cao cấp Hà Nội ↔ TP Hà Giang, Đồng Văn qua Vexere. Tài xế giàu kinh nghiệm vượt đèo dốc an toàn.',
+            rating: 4.8,
+            affiliateUrl: 'https://shorten.asia/STy4Pakb'
+          },
+          {
+            id: 'vexere-cb',
+            name: 'Nhà xe Cao Bằng',
+            category: 'transport',
+            destination: 'Thác Bản Giốc, Pác Bó, Động Ngườm Ngao, Hồ Thăng Hen, Núi Mắt Thần, Trùng Khánh',
+            region: 'Cao Bằng',
+            notes: 'Xe Limousine & giường nằm cao cấp Hà Nội ↔ TP Cao Bằng, Thác Bản Giốc qua Vexere. Xuất bến nhiều khung giờ, đưa đón tận nơi.',
+            rating: 4.8,
+            affiliateUrl: 'https://shorten.asia/Nck74KXF'
+          }
+        ];
+        setAffiliateServices(transList);
+        return;
+      }
+
+      // 2. DỊCH VỤ CƯ TRÚ (HOTEL)
+      if (cat === 'hotel') {
         const res = await api.get('/AffiliateService/all-active', {
           params: { category: cat },
           validateStatus: (status) => status < 500
@@ -552,26 +611,6 @@ const ItineraryPage = () => {
             notes: h.notes,
             rating: h.rating,
             affiliateUrl: h.url || hotelLinks[h.name] || 'https://shorten.asia/JcA53PgX'
-          });
-        });
-      } else if (cat === 'transport') {
-        const transList = [
-          { name: "Xe Limousine Tràng An VIP (Hà Nội - Ninh Bình)", destination: "TP. Ninh Bình & Điểm du lịch", region: "Ninh Bình", notes: "Xe Limousine 9-11 chỗ ghế massage cao cấp, đón trả tận nơi.", rating: 4.9, url: "https://shorten.asia/bVfmwTFr" },
-          { name: "Xe Limousine Ninh Bình Excursion Transport", destination: "TP. Ninh Bình & Điểm du lịch", region: "Ninh Bình", notes: "Tuyến xe du lịch cao cấp hàng ngày, đón trả tại phố cổ Hà Nội và Ninh Bình.", rating: 4.8, url: "https://shorten.asia/pGCwVAfK" },
-          { name: "Nhà xe Duy Khang Limousine", destination: "TP. Ninh Bình & Điểm du lịch", region: "Ninh Bình", notes: "Tần suất 60 phút/chuyến, chuyên tuyến Hà Nội - Ninh Bình trả tận điểm lưu trú.", rating: 4.7, url: "https://shorten.asia/s8QFsSzn" },
-          { name: "Xe Limousine Phúc Xuyên (Hà Nội - Hạ Long)", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Xe VIP đón trả tận nơi tại Bãi Cháy và Tuần Châu.", rating: 4.8, url: "https://shorten.asia/bVfmwTFr" },
-          { name: "Xe Vân Đồn Xanh Limousine", destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Chạy cao tốc Hà Nội - Hải Phòng - Hạ Long êm ái, tiện nghi.", rating: 4.8, url: "https://shorten.asia/s8QFsSzn" }
-        ];
-        transList.forEach((t, idx) => {
-          fallbackList.push({
-            id: `fallback-trans-${idx}`,
-            name: t.name,
-            category: 'transport',
-            destination: t.destination,
-            region: t.region,
-            notes: t.notes,
-            rating: t.rating,
-            affiliateUrl: t.url
           });
         });
       } else if (cat === 'food') {
