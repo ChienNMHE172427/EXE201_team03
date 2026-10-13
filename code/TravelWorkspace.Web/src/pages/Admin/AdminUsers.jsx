@@ -124,7 +124,7 @@ const AdminUsers = () => {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>STT</th>
                 <th>Họ Tên</th>
                 <th>Email</th>
                 <th>Vai trò</th>
@@ -134,9 +134,9 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map(user => (
+              {filteredUsers.map((user, index) => (
                 <tr key={user.id}>
-                  <td>{user.id}</td>
+                  <td>{index + 1}</td>
                   <td>{user.fullName}</td>
                   <td>{user.email}</td>
                   <td>
