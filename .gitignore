@@ -11,3 +11,5 @@ obj/
 *.log
 *.sqlite3
 appsettings.Development.json
+scratch/
+Outcome2.pdf

@@ -4,9 +4,10 @@ import api from '../services/api';
 import { getShortLocation } from '../utils/formatLocation';
 import './ExplorePage.css';
 import ReviewSection from '../components/ReviewSection';
-import { MessageSquare, X } from 'lucide-react';
+import { MessageSquare, X, Bus } from 'lucide-react';
 import MOCK_SERVICES from '../servicesData.json';
 import hotelLinks from '../hotelLinks.json';
+import getVexereLink from '../utils/getVexereLink';
 import TripNavigation from '../components/TripNavigation';
 
 const ExplorePage = () => {
@@ -311,6 +312,37 @@ const ExplorePage = () => {
                         return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(svc.title)}&checkin=${ci}&checkout=${co}`;
                       })()
                     } target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: 'center', padding: '6px', border: '1px solid #eaeaea', borderRadius: '8px', textDecoration: 'none', color: '#003580', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>Booking</a>
+                  </div>
+                )}
+                {svc.category === 'Di chuyển' && (
+                  <div style={{ marginTop: '12px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <a
+                      href={getVexereLink(svc, selectedTrip?.destination)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        flex: 1,
+                        textAlign: 'center',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        color: '#c2410c',
+                        background: '#fff7ed',
+                        border: '1px solid #fed7aa',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#ffedd5'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#fff7ed'; }}
+                      title="Đặt vé xe qua Vexere"
+                    >
+                      <Bus size={15} color="#ea580c" /> Đặt vé xe qua Vexere
+                    </a>
                   </div>
                 )}
               </div>

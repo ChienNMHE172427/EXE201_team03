@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Search, MapPin, MessageSquare, ExternalLink, Check, Plus, AlertCircle } from 'lucide-react';
+import { X, Search, MapPin, MessageSquare, ExternalLink, Check, Plus, AlertCircle, Bus } from 'lucide-react';
 import api from '../services/api';
 import { getShortLocation, formatItemTitle } from '../utils/formatLocation';
 import ReviewSection from './ReviewSection';
 import MOCK_SERVICES from '../servicesData.json';
 import hotelLinks from '../hotelLinks.json';
+import getVexereLink from '../utils/getVexereLink';
 import './ExploreServiceDrawer.css';
 
 /**
@@ -390,6 +391,22 @@ const ExploreServiceDrawer = ({
                             title="Đặt qua Booking.com"
                           >
                             Booking <ExternalLink size={11} style={{ marginLeft: 3 }} />
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Link đối tác Vexere cho dịch vụ di chuyển / nhà xe */}
+                      {svc.category === 'Di chuyển' && (
+                        <div className="drawer-hotel-links">
+                          <a
+                            href={getVexereLink(svc, trip?.destination)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="drawer-hotel-link vexere"
+                            title="Đặt vé xe khách / Limousine qua Vexere"
+                          >
+                            <Bus size={13} style={{ marginRight: 5 }} />
+                            Đặt vé xe Vexere <ExternalLink size={11} style={{ marginLeft: 4 }} />
                           </a>
                         </div>
                       )}

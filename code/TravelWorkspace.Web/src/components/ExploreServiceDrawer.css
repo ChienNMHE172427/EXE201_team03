@@ -447,6 +447,19 @@
   background: #eff6ff;
 }
 
+.drawer-hotel-link.vexere {
+  color: #ea580c;
+  border-color: #fed7aa;
+  background: #fff7ed;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+.drawer-hotel-link.vexere:hover {
+  background: #ffedd5;
+  color: #c2410c;
+  border-color: #fdba74;
+}
+
 /* Empty State */
 .drawer-empty-state {
   text-align: center;

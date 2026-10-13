@@ -27,6 +27,7 @@ import PackingPage from './pages/PackingPage';
 import SharedGalleryPage from './pages/SharedGalleryPage';
 import PlaceDetailsPage from './pages/PlaceDetailsPage';
 import InvitationsPage from './pages/InvitationsPage';
+import ExplorePage from './pages/ExplorePage';
 
 // Layout component to selectively show sidebars
 const Layout = ({ children }) => {
@@ -100,6 +101,7 @@ const App = () => {
             <Route path="/gallery" element={<Layout><SharedGalleryPage /></Layout>} />
             <Route path="/photos" element={<Layout><SharedGalleryPage /></Layout>} />
             <Route path="/place-details" element={<Layout><PlaceDetailsPage /></Layout>} />
+            <Route path="/explore" element={<Layout><ExplorePage /></Layout>} />
             <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
           </Route>
 

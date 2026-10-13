@@ -384,37 +384,181 @@ namespace TravelWorkspace.API.Data
                     Rating = 4.9,
                     IsActive = true
                 },
+                // ==========================================
+                // DỊCH VỤ NHÀ XE & DI CHUYỂN LIÊN KẾT (VEXERE)
+                // ==========================================
+                // 1. Quảng Ninh
+                new AffiliateDestinationService
+                {
+                    Region = "Quảng Ninh",
+                    Destination = "Vịnh Hạ Long & Bãi Cháy",
+                    Category = "transport",
+                    Name = "Xe Limousine Phúc Xuyên VIP (Hà Nội - Quảng Ninh)",
+                    AffiliateUrl = "https://shorten.asia/BmJJ5wE9",
+                    Notes = "Dàn xe Limousine VIP cao cấp, đón trả tận nơi tại Bãi Cháy, Hòn Gai, Tuần Châu.",
+                    Rating = 4.8,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Quảng Ninh",
+                    Destination = "Vịnh Hạ Long, Cô Tô & Vân Đồn",
+                    Category = "transport",
+                    Name = "Xe Vân Đồn Xanh Limousine (Hà Nội - Cẩm Phả - Hạ Long)",
+                    AffiliateUrl = "https://shorten.asia/BmJJ5wE9",
+                    Notes = "Chạy cao tốc Hà Nội - Hạ Long êm ái, ghế massage, nước uống và wifi tốc độ cao.",
+                    Rating = 4.9,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Quảng Ninh",
+                    Destination = "Đảo Cô Tô & Quan Lạn",
+                    Category = "transport",
+                    Name = "Tàu cao tốc & Xe đi Đảo Cô Tô - Quan Lạn",
+                    AffiliateUrl = "https://shorten.asia/BmJJ5wE9",
+                    Notes = "Kết nối xe limousine từ Hà Nội đến Cảng Ao Tiên đi Đảo Cô Tô và Đảo Quan Lạn.",
+                    Rating = 4.7,
+                    IsActive = true
+                },
+
+                // 2. Lào Cai
+                new AffiliateDestinationService
+                {
+                    Region = "Lào Cai",
+                    Destination = "Đỉnh Fansipan & Sa Pa",
+                    Category = "transport",
+                    Name = "Xe Limousine Sao Việt (Hà Nội - Sa Pa)",
+                    AffiliateUrl = "https://shorten.asia/QGuJ9Fue",
+                    Notes = "Tuyến xe cabin VIP đôi và đơn cao cấp, đón trả tại trung tâm thị xã Sa Pa.",
+                    Rating = 4.9,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Lào Cai",
+                    Destination = "Bản Cát Cát & Sa Pa",
+                    Category = "transport",
+                    Name = "Xe Khách Fansipan Express (Hà Nội - Sa Pa)",
+                    AffiliateUrl = "https://shorten.asia/QGuJ9Fue",
+                    Notes = "Xe giường nằm cao cấp phục vụ khách du lịch, kèm nước suối và hướng dẫn viên nhiệt tình.",
+                    Rating = 4.8,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Lào Cai",
+                    Destination = "Dinh Hoàng A Tưởng & Bắc Hà",
+                    Category = "transport",
+                    Name = "Xe Khách Hà Sơn Hải Vân (Hà Nội - Lào Cai - Bắc Hà)",
+                    AffiliateUrl = "https://shorten.asia/QGuJ9Fue",
+                    Notes = "Nhà xe uy tín hàng đầu tuyến Tây Bắc, phòng chờ VIP tiêu chuẩn 5 sao.",
+                    Rating = 4.8,
+                    IsActive = true
+                },
+
+                // 3. Ninh Bình
                 new AffiliateDestinationService
                 {
                     Region = "Ninh Bình",
-                    Destination = "TP. Ninh Bình & Điểm du lịch",
+                    Destination = "Quần thể Tràng An & Bái Đính",
                     Category = "transport",
                     Name = "Xe Limousine Tràng An VIP (Hà Nội - Ninh Bình)",
-                    AffiliateUrl = "https://shorten.asia/bVfmwTFr",
-                    Notes = "Xe Limousine 9-11 chỗ ghế massage cao cấp, đón trả tận nơi tại Hà Nội và các điểm du lịch Tam Cốc, Tràng An.",
+                    AffiliateUrl = "https://shorten.asia/R3cnEDct",
+                    Notes = "Xe Limousine 9-11 chỗ ghế massage cao cấp, đón trả tận nơi tại điểm du lịch Tam Cốc, Tràng An.",
                     Rating = 4.9,
                     IsActive = true
                 },
                 new AffiliateDestinationService
                 {
                     Region = "Ninh Bình",
-                    Destination = "TP. Ninh Bình & Điểm du lịch",
+                    Destination = "Tam Cốc - Bích Động & Hoa Lư",
                     Category = "transport",
                     Name = "Xe Limousine Ninh Bình Excursion Transport",
-                    AffiliateUrl = "https://shorten.asia/pGCwVAfK",
-                    Notes = "Tuyến xe du lịch chất lượng cao hàng ngày, đưa đón tận khách sạn khu phố cổ Hà Nội và Ninh Bình.",
+                    AffiliateUrl = "https://shorten.asia/R3cnEDct",
+                    Notes = "Tuyến xe du lịch cao cấp hàng ngày, đưa đón tận khách sạn khu phố cổ Hà Nội và Ninh Bình.",
                     Rating = 4.8,
                     IsActive = true
                 },
                 new AffiliateDestinationService
                 {
                     Region = "Ninh Bình",
-                    Destination = "TP. Ninh Bình & Điểm du lịch",
+                    Destination = "Cố đô Hoa Lư & Hang Múa",
                     Category = "transport",
                     Name = "Nhà xe Duy Khang Limousine",
-                    AffiliateUrl = "https://shorten.asia/s8QFsSzn",
-                    Notes = "Tần suất 60 phút/chuyến, wifi máy lạnh miễn phí, chuyên tuyến Hà Nội - Ninh Bình trả tận điểm lưu trú.",
+                    AffiliateUrl = "https://shorten.asia/R3cnEDct",
+                    Notes = "Tần suất 60 phút/chuyến, chuyên tuyến Hà Nội - Ninh Bình trả tận điểm lưu trú.",
                     Rating = 4.7,
+                    IsActive = true
+                },
+
+                // 4. Hà Giang
+                new AffiliateDestinationService
+                {
+                    Region = "Hà Giang",
+                    Destination = "Cột cờ Lũng Cú & Đồng Văn",
+                    Category = "transport",
+                    Name = "Xe Cung Điện Bằng Phấn (Hà Nội - Hà Giang)",
+                    AffiliateUrl = "https://shorten.asia/STy4Pakb",
+                    Notes = "Xe cabin cung điện đôi & đơn tiện nghi sang trọng nhất tuyến Hà Nội - Hà Giang.",
+                    Rating = 4.9,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Hà Giang",
+                    Destination = "Phố cổ Đồng Văn & Mã Pí Lèng",
+                    Category = "transport",
+                    Name = "Xe Limousine Quang Nghị VIP (Hà Nội - Đồng Văn)",
+                    AffiliateUrl = "https://shorten.asia/STy4Pakb",
+                    Notes = "Xe VIP chuyên tuyến thẳng lên cao nguyên đá Đồng Văn và Mèo Vạc.",
+                    Rating = 4.8,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Hà Giang",
+                    Destination = "Hoàng Su Phì & Hà Giang",
+                    Category = "transport",
+                    Name = "Xe Giường Nằm Đăng Quang Express",
+                    AffiliateUrl = "https://shorten.asia/STy4Pakb",
+                    Notes = "Xe chất lượng cao phục vụ khách đi săn lúa Hoàng Su Phì và ngắm hoa tam giác mạch.",
+                    Rating = 4.7,
+                    IsActive = true
+                },
+
+                // 5. Cao Bằng
+                new AffiliateDestinationService
+                {
+                    Region = "Cao Bằng",
+                    Destination = "Thác Bản Giốc & Trùng Khánh",
+                    Category = "transport",
+                    Name = "Xe Limousine Thanh Ly (Hà Nội - Cao Bằng)",
+                    AffiliateUrl = "https://shorten.asia/Nck74KXF",
+                    Notes = "Xe Limousine cao cấp chạy thẳng cao tốc, đón trả tận nơi tại TP Cao Bằng.",
+                    Rating = 4.9,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Cao Bằng",
+                    Destination = "Khu di tích Pác Bó & Suối Lê-nin",
+                    Category = "transport",
+                    Name = "Xe Giường Nằm Khánh Hoàn (Hà Nội - Cao Bằng)",
+                    AffiliateUrl = "https://shorten.asia/Nck74KXF",
+                    Notes = "Xe giường nằm hiện đại, xuất bến Mỹ Đình và Giáp Bát hàng ngày.",
+                    Rating = 4.8,
+                    IsActive = true
+                },
+                new AffiliateDestinationService
+                {
+                    Region = "Cao Bằng",
+                    Destination = "Động Ngườm Ngao & Bản Giốc",
+                    Category = "transport",
+                    Name = "Xe Limousine Hiệp Mừng (Hà Nội - Thác Bản Giốc)",
+                    AffiliateUrl = "https://shorten.asia/Nck74KXF",
+                    Notes = "Xe đưa đón khách du lịch tham quan Thác Bản Giốc và Động Ngườm Ngao thuận tiện.",
+                    Rating = 4.8,
                     IsActive = true
                 }
             };
