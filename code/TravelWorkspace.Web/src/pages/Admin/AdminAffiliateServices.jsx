@@ -8,7 +8,9 @@ import {
   Edit2, 
   Trash2, 
   Search, 
-  X 
+  X,
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
 import api from '../../services/api';
 import './Admin.css';
@@ -16,6 +18,8 @@ import './Admin.css';
 const AdminAffiliateServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -43,17 +47,45 @@ const AdminAffiliateServices = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/AffiliateService/admin/all');
-      setServices(res.data || []);
+      let res = await api.get('/AffiliateService/admin/all');
+      
+      // Nếu API trả về mảng rỗng (thường gặp khi database online vừa khởi tạo), tự động kích hoạt nạp dữ liệu mẫu
+      if (!res.data || res.data.length === 0) {
+        try {
+          await api.post('/AffiliateService/admin/reseed');
+          res = await api.get('/AffiliateService/admin/all');
+        } catch (seedErr) {
+          console.warn('Tự động nạp dữ liệu mẫu ban đầu:', seedErr);
+        }
+      }
+
+      const data = res.data || [];
+      setServices(data);
       
       // Mặc định chọn khu vực đầu tiên nếu chưa chọn
-      if (res.data && res.data.length > 0 && !selectedRegion) {
-        setSelectedRegion(res.data[0].region);
+      if (data.length > 0) {
+        setSelectedRegion(prev => prev || data[0].region);
       }
     } catch (err) {
       console.error('Lỗi khi tải dịch vụ affiliate:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReseed = async () => {
+    try {
+      setSyncing(true);
+      setSyncMessage('');
+      const res = await api.post('/AffiliateService/admin/reseed');
+      setSyncMessage(res.data?.message || 'Đồng bộ dữ liệu thành công!');
+      await fetchServices();
+    } catch (err) {
+      console.error('Lỗi khi đồng bộ dữ liệu affiliate:', err);
+      alert('Không thể đồng bộ tự động. Vui lòng kiểm tra kết nối API online.');
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMessage(''), 5000);
     }
   };
 
@@ -199,6 +231,28 @@ const AdminAffiliateServices = () => {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button 
             type="button" 
+            onClick={handleReseed}
+            disabled={syncing}
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              padding: '8px 16px', 
+              background: syncing ? '#94a3b8' : '#4f46e5', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '6px', 
+              cursor: syncing ? 'not-allowed' : 'pointer', 
+              fontWeight: '600', 
+              fontSize: '13px' 
+            }}
+            title="Đồng bộ nạp đầy đủ 44 dịch vụ affiliate mẫu cho 5 khu vực vào cơ sở dữ liệu"
+          >
+            <RefreshCw size={15} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} /> 
+            {syncing ? 'Đang đồng bộ...' : 'Đồng Bộ Dữ Liệu Mẫu'}
+          </button>
+          <button 
+            type="button" 
             onClick={() => setShowAddRegionModal(true)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
           >
@@ -213,6 +267,26 @@ const AdminAffiliateServices = () => {
           </button>
         </div>
       </div>
+
+      {/* Toast thông báo đồng bộ */}
+      {syncMessage && (
+        <div style={{ 
+          background: '#ecfdf5', 
+          border: '1px solid #a7f3d0', 
+          color: '#065f46', 
+          padding: '12px 16px', 
+          borderRadius: '8px', 
+          marginBottom: '16px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px',
+          fontWeight: '500',
+          fontSize: '14px'
+        }}>
+          <CheckCircle2 size={18} color="#059669" />
+          <span>{syncMessage}</span>
+        </div>
+      )}
 
       {/* Bộ lọc Khu vực & Tìm kiếm */}
       <div style={{ background: 'white', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', gap: '16px', alignItems: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
@@ -260,6 +334,40 @@ const AdminAffiliateServices = () => {
       {/* Nội dung danh sách theo từng Địa điểm trong Khu vực */}
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Đang tải danh sách dịch vụ...</div>
+      ) : uniqueRegions.length === 0 ? (
+        <div style={{ background: 'white', padding: '40px 24px', borderRadius: '12px', textAlign: 'center', color: '#475569', border: '1px dashed #cbd5e1', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
+          <div style={{ width: '56px', height: '56px', background: '#e0e7ff', color: '#4f46e5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <RefreshCw size={26} />
+          </div>
+          <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 'bold', color: '#1e293b' }}>
+            Chưa có dữ liệu Affiliate theo khu vực
+          </h3>
+          <p style={{ margin: '0 auto 20px', maxWidth: '520px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
+            Bản online vừa được khởi tạo cơ sở dữ liệu mới. Bạn có thể nhấn nút bên dưới để tự động nạp toàn bộ <strong>44 dịch vụ đối tác</strong> (khách sạn & nhà xe) chuẩn giống như bản local cho 5 tỉnh/thành: <em>Quảng Ninh, Lào Cai, Ninh Bình, Hà Giang, Cao Bằng</em>.
+          </p>
+          <button 
+            type="button" 
+            onClick={handleReseed}
+            disabled={syncing}
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '10px 24px', 
+              background: '#4f46e5', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: syncing ? 'not-allowed' : 'pointer', 
+              fontWeight: '600', 
+              fontSize: '14px',
+              boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)' 
+            }}
+          >
+            <RefreshCw size={16} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+            {syncing ? 'Đang nạp dữ liệu mẫu...' : 'Nạp Dữ Liệu Mẫu Ngay (Giống Bản Local)'}
+          </button>
+        </div>
       ) : destinationsInRegion.length === 0 ? (
         <div style={{ background: 'white', padding: '40px', borderRadius: '8px', textAlign: 'center', color: '#64748b', border: '1px dashed #cbd5e1' }}>
           <p style={{ margin: '0 0 12px 0', fontSize: '15px' }}>
