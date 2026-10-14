@@ -43,11 +43,6 @@ const AdminDashboard = () => {
           <div className="stat-value" style={{color: '#ff6b6b'}}>0</div>
           <div className="stat-trend">Chưa ra mắt</div>
         </div>
-        <div className="stat-card">
-          <h3>Ước tính doanh thu Affiliate</h3>
-          <div className="stat-value">{(stats.totalRevenue * 0.05).toLocaleString('vi-VN')} ₫</div>
-          <div className="stat-trend positive">Tạm tính (5% tổng chi tiêu)</div>
-        </div>
       </div>
 
       <h3 style={{marginTop: '40px', marginBottom: '20px'}}>Hoạt động gần đây</h3>
