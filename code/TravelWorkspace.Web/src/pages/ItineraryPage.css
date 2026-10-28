@@ -1686,4 +1686,73 @@
   .suggested-banner-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Fix Modal Khám phá Dịch vụ & Bản đồ trên Mobile không bị bản đồ đè mất danh sách */
+  .food-map-modal-overlay {
+    padding: 8px;
+  }
+
+  .food-map-modal-card {
+    max-height: 92vh;
+    border-radius: 16px;
+  }
+
+  .food-map-modal-header {
+    padding: 12px 14px;
+  }
+
+  .food-map-modal-title {
+    font-size: 16px;
+  }
+
+  .food-map-modal-subtitle {
+    font-size: 12px;
+  }
+
+  .food-map-split-body {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    max-height: calc(92vh - 115px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .food-map-ai-panel {
+    flex: 0 0 auto !important;
+    border-right: none !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 10px !important;
+    gap: 10px !important;
+  }
+
+  .food-left-search-box {
+    padding: 8px 10px !important;
+  }
+
+  .food-tab-info-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .food-map-panel {
+    flex: 0 0 auto !important;
+    min-height: 260px !important;
+    height: 280px !important;
+  }
+
+  .food-map-iframe-wrapper {
+    min-height: 220px !important;
+    height: 240px !important;
+  }
+
+  .food-map-modal-footer {
+    padding: 10px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 11.5px;
+  }
 }

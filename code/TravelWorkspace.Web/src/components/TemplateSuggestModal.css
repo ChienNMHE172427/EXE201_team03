@@ -447,3 +447,63 @@
   background: #e2e8f0;
   color: #0f172a;
 }
+
+
+/* Mobile Responsive Overrides (<= 768px) */
+@media (max-width: 768px) {
+  .template-modal-overlay {
+    padding: 10px;
+  }
+
+  .template-modal-container {
+    max-height: 92vh;
+    border-radius: 16px;
+  }
+
+  .template-modal-header {
+    padding: 16px 16px 14px;
+  }
+
+  .template-modal-title {
+    font-size: 18px;
+    padding-right: 36px;
+  }
+
+  .template-modal-subtitle {
+    font-size: 12.5px;
+  }
+
+  .template-modal-controls {
+    padding: 12px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .template-tab-group {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .template-tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 7px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .template-search-wrapper {
+    max-width: 100%;
+  }
+
+  .template-modal-body {
+    padding: 14px;
+    max-height: calc(92vh - 200px);
+  }
+
+  .template-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
