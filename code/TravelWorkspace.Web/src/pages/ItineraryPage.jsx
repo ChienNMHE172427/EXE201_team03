@@ -183,6 +183,7 @@ const ItineraryPage = () => {
     title: '', location: '', notes: '', startTime: '', endTime: '', transport: '', assignee: '', status: 'Chưa bắt đầu'
   });
   // Chat AI
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: 'ai', content: 'Chào bạn! Mình là trợ lý AI. Mình có thể giúp bạn tạo mới hoặc chỉnh sửa lịch trình theo ý muốn. Bạn muốn thay đổi gì nào?' }
   ]);
@@ -1258,6 +1259,18 @@ const ItineraryPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <button
             type="button"
+            onClick={() => setIsAiChatOpen(prev => !prev)}
+            className={`gemini-ai-toggle-btn ${isAiChatOpen ? 'active' : ''}`}
+            title={isAiChatOpen ? "Thu gọn khung chat Gemini AI" : "Mở khung chat Gemini AI"}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+            <span>{isAiChatOpen ? 'Thu gọn Gemini AI' : 'Gemini AI'}</span>
+          </button>
+
+          <button
+            type="button"
             disabled={isSharingTrip}
             onClick={handleToggleShareTrip}
             style={{
@@ -1330,68 +1343,100 @@ const ItineraryPage = () => {
         </div>
       )}
 
-      <div className="split-layout">
-        {/* Left pane: AI Chat */}
-        <div className="chat-container">
-          <div className="chat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ display: 'flex', alignItems: 'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-              {isGeminiConnected ? 'Gemini AI' : 'Trợ lý Lịch trình AI'}
-            </span>
-            {isGeminiConnected ? (
-              <button 
-                onClick={handleLogoutGemini}
-                title="Đăng xuất"
-                style={{ background: 'none', border: 'none', color: '#ff4d4f', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+      <div className={`split-layout ${!isAiChatOpen ? 'ai-collapsed' : ''}`}>
+        {/* Left pane: AI Chat (Collapsible) */}
+        {isAiChatOpen && (
+          <div className="chat-container">
+            <div className="chat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setIsAiChatOpen(false)}
+                className="chat-header-toggle"
+                title="Bấm vào icon Gemini AI để thu gọn khung chat"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <span className="gemini-icon-badge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                </span>
+                <span>{isGeminiConnected ? 'Gemini AI' : 'Trợ lý Lịch trình AI'}</span>
               </button>
-            ) : null}
-          </div>
-          
-          {!isGeminiConnected ? (
-            <div style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
-              <h3 style={{ marginBottom: 12 }}>Kết nối với Gemini</h3>
-              <p style={{ color: '#666', fontSize: 14, marginBottom: 24 }}>Đăng nhập để sử dụng sức mạnh của Google Gemini cho chuyến đi của bạn.</p>
-              <button className="btn-primary" onClick={handleLoginGemini}>
-                Đăng nhập với Google
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="chat-messages">
-                {messages.map((m, idx) => (
-                  <div key={idx} className={`chat-bubble ${m.role}`}>
-                    {m.content}
-                  </div>
-                ))}
-                {isChatting && (
-                  <div className="chat-bubble ai">
-                    Đang suy nghĩ...
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-                  <button className="btn-explore-sm" onClick={handleGenerateAi} disabled={isChatting} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <RefreshCw size={14} /> Tạo mới toàn bộ lịch trình
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {isGeminiConnected ? (
+                  <button 
+                    onClick={handleLogoutGemini}
+                    title="Đăng xuất Gemini"
+                    style={{ background: 'none', border: 'none', color: '#ff4d4f', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                  >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                   </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setIsAiChatOpen(false)}
+                  className="chat-minimize-btn"
+                  title="Thu gọn khung chat AI"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            
+            {!isGeminiConnected ? (
+              <div style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
+                <h3 style={{ marginBottom: 12 }}>Kết nối với Gemini</h3>
+                <p style={{ color: '#666', fontSize: 14, marginBottom: 24 }}>Đăng nhập để sử dụng sức mạnh của Google Gemini cho chuyến đi của bạn.</p>
+                <button className="btn-primary" onClick={handleLoginGemini}>
+                  Đăng nhập với Google
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="chat-messages">
+                  {messages.map((m, idx) => (
+                    <div key={idx} className={`chat-bubble ${m.role}`}>
+                      {m.content}
+                    </div>
+                  ))}
+                  {isChatting && (
+                    <div className="chat-bubble ai">
+                      Đang suy nghĩ...
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                    <button className="btn-explore-sm" onClick={handleGenerateAi} disabled={isChatting} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <RefreshCw size={14} /> Tạo mới toàn bộ lịch trình
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="chat-input-area">
-                <input 
-                  type="text" 
-                  className="chat-input" 
-                  placeholder="Ví dụ: Đổi lịch chiều ngày 2 thành đi ăn ốc..." 
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={isChatting}
-                />
-                <button className="btn-send" onClick={handleSendMessage} disabled={isChatting || !chatInput.trim()}>Gửi</button>
-              </div>
-            </>
-          )}
-        </div>
+                <div className="chat-input-area">
+                  <input 
+                    type="text" 
+                    className="chat-input" 
+                    placeholder="Ví dụ: Đổi lịch chiều ngày 2 thành đi ăn ốc..." 
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={isChatting}
+                  />
+                  <button className="btn-send" onClick={handleSendMessage} disabled={isChatting || !chatInput.trim()}>Gửi</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Nút nổi Gemini AI để mở/đóng nhanh trên cả Web và Mobile */}
+        <button
+          type="button"
+          className={`gemini-ai-fab ${isAiChatOpen ? 'is-open' : ''}`}
+          onClick={() => setIsAiChatOpen(prev => !prev)}
+          title={isAiChatOpen ? "Thu gọn chat Gemini AI" : "Mở chat Gemini AI"}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+          </svg>
+          <span className="gemini-ai-fab-label">{isAiChatOpen ? 'Đóng AI' : 'Gemini AI'}</span>
+        </button>
 
         {/* Right pane: Timeline Layout */}
         <div className="timeline-container">
@@ -1767,11 +1812,12 @@ const ItineraryPage = () => {
                                   <button 
                                     className="btn-action-icon btn-ask-ai" 
                                     onClick={() => {
+                                      setIsAiChatOpen(true);
                                       setMessages(prev => [...prev, { role: 'ai', content: `Bạn muốn thay đổi gì ở giai đoạn "${formatItemTitle(item.title)}"?` }]);
                                       setTimeout(() => {
                                         const input = document.querySelector('.chat-input');
                                         if(input) input.focus();
-                                      }, 100);
+                                      }, 120);
                                     }}
                                     title="Hỏi trợ lý AI"
                                   >
