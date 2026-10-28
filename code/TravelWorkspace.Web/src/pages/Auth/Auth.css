@@ -127,3 +127,26 @@
   margin-top: 14px;
 }
 
+
+
+/* Mobile Responsive Overrides (<= 768px) */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 20px 16px;
+  }
+
+  .auth-card {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+
+  .auth-logo {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .auth-title {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+}

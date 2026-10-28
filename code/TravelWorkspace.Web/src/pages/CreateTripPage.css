@@ -252,3 +252,35 @@
   color: var(--color-text-main);
   line-height: 1.5;
 }
+
+
+/* Mobile Responsive Overrides (<= 768px) */
+@media (max-width: 768px) {
+  .create-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .form-section {
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .form-section h2 {
+    font-size: 19px;
+  }
+
+  .form-subtitle {
+    margin-bottom: 20px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .summary-card {
+    padding: 22px 18px;
+    margin-bottom: 20px;
+  }
+}

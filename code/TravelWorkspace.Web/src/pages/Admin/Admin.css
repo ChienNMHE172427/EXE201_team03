@@ -314,3 +314,59 @@
   background: #b91c1c;
 }
 
+
+
+/* Mobile Responsive Overrides (<= 768px) */
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 16px 10px;
+  }
+
+  .admin-page h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .stat-card {
+    padding: 18px 16px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table {
+    min-width: 650px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .admin-modal-content {
+    width: 94%;
+    padding: 18px 16px;
+  }
+
+  .admin-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .admin-btn-secondary,
+  .admin-btn-danger {
+    width: 100%;
+    text-align: center;
+  }
+}

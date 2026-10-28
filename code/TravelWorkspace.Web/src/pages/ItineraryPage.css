@@ -1592,3 +1592,98 @@
 }
 
 
+
+
+/* Mobile Responsive Overrides (<= 768px) */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 0 !important;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .timeline-container {
+    padding-right: 0;
+    gap: 20px;
+  }
+
+  .timeline-date-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .timeline-date-title {
+    font-size: 17px;
+  }
+
+  .timeline-date-right {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    justify-content: flex-start;
+  }
+
+  .timeline-list {
+    padding-left: 14px;
+    margin-left: 4px;
+  }
+
+  .timeline-dot {
+    left: -21px;
+  }
+
+  .itinerary-card {
+    padding: 12px 14px;
+  }
+
+  .itinerary-card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .itinerary-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .itinerary-services {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .service-btn {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .modal-content {
+    padding: 20px 16px;
+    margin: 12px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 16px;
+  }
+
+  .suggested-templates-banner {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+
+  .suggested-banner-title {
+    font-size: 17px;
+  }
+
+  .suggested-banner-grid {
+    grid-template-columns: 1fr;
+  }
+}

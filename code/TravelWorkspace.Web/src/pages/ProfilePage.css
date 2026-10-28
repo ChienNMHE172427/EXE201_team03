@@ -96,3 +96,25 @@
   color: #c62828;
   border: 1px solid #ffcdd2;
 }
+
+
+/* Mobile Responsive Overrides (<= 768px) */
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 8px 0;
+  }
+
+  .profile-container h2 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .profile-card {
+    padding: 20px 16px;
+    margin-bottom: 20px;
+  }
+
+  .btn-save {
+    width: 100%;
+  }
+}

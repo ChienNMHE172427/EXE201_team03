@@ -234,3 +234,36 @@
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
+
+
+/* Mobile Responsive Overrides (<= 768px) */
+@media (max-width: 768px) {
+  .collab-container {
+    height: auto;
+    min-height: calc(100vh - 100px);
+  }
+
+  .collab-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .collab-chat-section {
+    height: 440px;
+  }
+
+  .collab-todo-section {
+    min-height: 360px;
+  }
+
+  .chat-input-area,
+  .todo-input-area {
+    padding: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .chat-message {
+    max-width: 90%;
+  }
+}
