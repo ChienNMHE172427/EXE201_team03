@@ -26,6 +26,12 @@ const ExploreServiceDrawer = ({
   const [addingServiceId, setAddingServiceId] = useState(null);
   const [addedSuccessIds, setAddedSuccessIds] = useState(new Set());
   const [toastMessage, setToastMessage] = useState(null);
+  const [drawerNoticeModal, setDrawerNoticeModal] = useState({
+    isOpen: false,
+    type: '', // 'added' | 'require_booking'
+    title: '',
+    category: ''
+  });
 
   const categories = ['Tất cả', 'Lưu trú', 'Ăn uống', 'Tham quan', 'Di chuyển'];
 
@@ -130,6 +136,17 @@ const ExploreServiceDrawer = ({
   // Add service directly to selected activity stage
   const handleAddServiceToStage = async (svc) => {
     if (!activityContext) return;
+
+    if (svc.category === 'Lưu trú' || svc.category === 'Di chuyển') {
+      setDrawerNoticeModal({
+        isOpen: true,
+        type: 'require_booking',
+        title: svc.title,
+        category: svc.category
+      });
+      return;
+    }
+
     setAddingServiceId(svc.id);
 
     try {
@@ -140,13 +157,9 @@ const ExploreServiceDrawer = ({
         const currentItem = tripRes.data.find((i) => i.id === activityContext.id);
 
         if (currentItem) {
-          if (svc.category === 'Di chuyển') {
-            currentItem.transport = svc.title;
-          } else {
-            currentItem.destination = svc.title;
-            const newNote = `${svc.category}: ${svc.title}`;
-            currentItem.notes = currentItem.notes ? `${currentItem.notes}\n${newNote}` : newNote;
-          }
+          currentItem.destination = svc.title;
+          const newNote = `${svc.category}: ${svc.title}`;
+          currentItem.notes = currentItem.notes ? `${currentItem.notes}\n${newNote}` : newNote;
 
           await api.put(`/Itinerary/${activityContext.id}`, currentItem);
         }
@@ -155,6 +168,12 @@ const ExploreServiceDrawer = ({
       setAddedSuccessIds((prev) => new Set([...prev, svc.id]));
       setToastMessage(`Đã thêm "${svc.title}" vào chặng!`);
       setTimeout(() => setToastMessage(null), 3000);
+      setDrawerNoticeModal({
+        isOpen: true,
+        type: 'added',
+        title: svc.title,
+        category: svc.category
+      });
 
       if (onActivityUpdated) {
         onActivityUpdated();
@@ -477,6 +496,54 @@ const ExploreServiceDrawer = ({
               placeId={selectedReviewPlace.id}
               placeName={selectedReviewPlace.name}
             />
+          </div>
+        </div>
+      )}
+
+      {drawerNoticeModal.isOpen && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20000,
+            padding: '16px'
+          }}
+          onClick={() => setDrawerNoticeModal(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div
+            className="modal-content"
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '420px',
+              width: '100%',
+              padding: '28px 24px',
+              textAlign: 'center',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 12px 0' }}>
+              {drawerNoticeModal.type === 'added' ? 'Đã lưu vào lịch trình!' : 'Vui lòng đặt dịch vụ'}
+            </h3>
+            <p style={{ fontSize: '14.5px', color: '#334155', lineHeight: '1.6', marginBottom: '20px' }}>
+              {drawerNoticeModal.type === 'added'
+                ? `Đã thêm "${drawerNoticeModal.title}" vào phần Điểm đến trong thông tin chi tiết của chặng.`
+                : `Vui lòng đặt dịch vụ để thêm vào lịch trình!`}
+            </p>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setDrawerNoticeModal(prev => ({ ...prev, isOpen: false }))}
+            >
+              Đóng
+            </button>
           </div>
         </div>
       )}

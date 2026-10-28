@@ -227,6 +227,15 @@ const ItineraryPage = () => {
   const [addingRestaurantKey, setAddingRestaurantKey] = useState(null);
   const [addedRestaurants, setAddedRestaurants] = useState({});
   const [foodModalToast, setFoodModalToast] = useState(null);
+  const [serviceNoticeModal, setServiceNoticeModal] = useState({
+    isOpen: false,
+    type: '', // 'restaurant_added' | 'require_booking'
+    serviceName: '',
+    serviceCategory: '',
+    stageTitle: '',
+    actionUrl: '',
+    updatedItem: null
+  });
 
   // Trình khám phá động trên bản đồ (State tìm kiếm & Lọc nhanh)
   const [mapQuery, setMapQuery] = useState('restaurants');
@@ -830,44 +839,109 @@ const ItineraryPage = () => {
   };
 
   // Xử lý thêm nhà hàng/địa điểm vào lịch trình chuyến đi
-  const handleAddRestaurantToItinerary = async (placeItem, source = 'real') => {
+  const handleAddRestaurantToItinerary = async (placeItem, source = 'food') => {
     if (!selectedTripId) {
       alert('Không tìm thấy chuyến đi để thêm hoạt động.');
       return;
     }
 
-    const placeName = placeItem.name || placeItem.title || (placeItem.display_name ? placeItem.display_name.split(',')[0].trim() : (foodMapModal.category === 'hotel' ? 'Khách sạn' : foodMapModal.category === 'transport' ? 'Trạm xe' : 'Quán ăn'));
-    const placeAddress = placeItem.display_name || placeItem.location || placeItem.address || foodMapModal.query;
-    const placeSpecialty = placeItem.specialty || (placeItem.type ? `Loại hình: ${placeItem.type}` : 'Ăn uống & Ẩm thực');
-    const placeNotes = placeItem.reason || (placeItem.display_name ? `Địa chỉ: ${placeItem.display_name}` : '');
-    const itemKey = `${placeName}-${source}`;
+    const activeCategory = placeItem.category || foodMapModal.category || source || 'food';
+    const isHotel = activeCategory === 'hotel';
+    const isTransport = activeCategory === 'transport';
+    const placeName = placeItem.name || placeItem.title || (placeItem.display_name ? placeItem.display_name.split(',')[0].trim() : (isHotel ? 'Khách sạn' : isTransport ? 'Trạm xe' : 'Quán ăn'));
 
+    // Nếu là dịch vụ Đặt phòng (hotel) hoặc Vé xe (transport) -> Hiện modal yêu cầu đặt dịch vụ
+    if (isHotel || isTransport) {
+      setServiceNoticeModal({
+        isOpen: true,
+        type: 'require_booking',
+        serviceName: placeName,
+        serviceCategory: isHotel ? 'hotel' : 'transport',
+        stageTitle: foodMapModal.title || formatItemTitle(foodMapModal.activityItem?.title || 'Chặng lịch trình'),
+        actionUrl: placeItem.actionUrl || '',
+        updatedItem: null
+      });
+      return;
+    }
+
+    // Nếu là Nhà hàng / Quán ăn -> Lưu vào chặng hiện tại và thay vào phần Điểm đến (destination)
+    const itemKey = `${placeName}-${activeCategory}`;
     setAddingRestaurantKey(itemKey);
 
     try {
-      const payload = {
-        date: foodMapModal.activityItem?.startTime || trip?.startDate || new Date().toISOString(),
-        restaurantName: placeName,
-        address: placeAddress,
-        specialty: placeSpecialty,
-        notes: placeNotes,
-        lat: placeItem.lat ? String(placeItem.lat) : null,
-        lon: placeItem.lon ? String(placeItem.lon) : null
-      };
+      const targetActivity = items.find(i => i.id === foodMapModal.activityItem?.id) || foodMapModal.activityItem;
 
-      await api.post(`/Itinerary/${selectedTripId}/add-restaurant`, payload);
+      if (targetActivity && targetActivity.id) {
+        const noteLine = `Ẩm thực: ${placeName}`;
+        const existingNotes = (targetActivity.notes || '').trim();
+        const updatedNotes = existingNotes.includes(placeName)
+          ? existingNotes
+          : (existingNotes ? `${existingNotes}\n${noteLine}` : noteLine);
 
-      setAddedRestaurants(prev => ({ ...prev, [itemKey]: true }));
-      setFoodModalToast(`Đã thêm "${placeName}" vào lịch trình!`);
-      setTimeout(() => setFoodModalToast(null), 3500);
+        const updatedItem = {
+          ...targetActivity,
+          destination: placeName,
+          notes: updatedNotes
+        };
 
-      // Cập nhật lại toàn bộ lịch trình chuyến đi
-      if (selectedTripId) {
-        fetchTripData(selectedTripId);
+        await api.put(`/Itinerary/${targetActivity.id}`, updatedItem);
+
+        // Cập nhật ngay state items trên giao diện để phần Thông tin chi tiết hiển thị Điểm đến mới
+        setItems(prev => prev.map(i => i.id === targetActivity.id ? { ...i, destination: placeName, notes: updatedNotes } : i));
+        setFoodMapModal(prev => ({
+          ...prev,
+          activityItem: prev.activityItem ? { ...prev.activityItem, destination: placeName, notes: updatedNotes } : prev.activityItem
+        }));
+        if (selectedInfoItem && selectedInfoItem.id === targetActivity.id) {
+          setSelectedInfoItem(prev => ({ ...prev, destination: placeName, notes: updatedNotes }));
+        }
+
+        setAddedRestaurants(prev => ({ ...prev, [itemKey]: true }));
+        setServiceNoticeModal({
+          isOpen: true,
+          type: 'restaurant_added',
+          serviceName: placeName,
+          serviceCategory: 'food',
+          stageTitle: formatItemTitle(targetActivity.title),
+          actionUrl: '',
+          updatedItem
+        });
+      } else {
+        // Fallback nếu không gắn với chặng cụ thể thì tạo mới hoạt động trong lịch trình
+        const baseDate = trip?.startDate ? new Date(trip.startDate) : new Date();
+        const startTime = new Date(baseDate);
+        startTime.setHours(12, 0, 0, 0);
+        const endTime = new Date(startTime.getTime() + 90 * 60000);
+
+        const newItineraryPayload = {
+          title: `Thưởng thức ẩm thực tại ${placeName}`,
+          location: placeItem.address || trip?.destination || placeName,
+          destination: placeName,
+          notes: placeItem.reason || `Ẩm thực: ${placeName}`,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          transport: 'Tự túc',
+          assignee: 'Cả nhóm',
+          status: 'Chưa bắt đầu'
+        };
+
+        const createRes = await api.post(`/Itinerary/${selectedTripId}`, newItineraryPayload);
+        const createdItem = createRes.data;
+        setItems(prev => [...prev, createdItem]);
+        setAddedRestaurants(prev => ({ ...prev, [itemKey]: true }));
+        setServiceNoticeModal({
+          isOpen: true,
+          type: 'restaurant_added',
+          serviceName: placeName,
+          serviceCategory: 'food',
+          stageTitle: formatItemTitle(createdItem.title),
+          actionUrl: '',
+          updatedItem: createdItem
+        });
       }
     } catch (err) {
       console.error('Lỗi khi thêm nhà hàng vào lịch trình:', err);
-      alert('Không thể thêm hoạt động vào lịch trình. Vui lòng thử lại.');
+      alert('Không thể thêm nhà hàng vào lịch trình. Vui lòng thử lại.');
     } finally {
       setAddingRestaurantKey(null);
     }
@@ -1911,7 +1985,7 @@ const ItineraryPage = () => {
             <div style={{ textAlign: 'left', marginBottom: '24px' }}>
               <p style={{ marginBottom: '8px' }}><strong>Tên hoạt động/Dịch vụ:</strong> <br/>{formatItemTitle(selectedInfoItem.title)}</p>
               <p style={{ marginBottom: '8px' }}><strong>Điểm đi:</strong> <br/>{getShortLocation(selectedInfoItem.location)}</p>
-              <p style={{ marginBottom: '8px' }}><strong>Điểm đến:</strong> <br/>{selectedInfoItem.destination ? getShortLocation(selectedInfoItem.destination) : 'Vui lòng chọn dịch vụ'}</p>
+              <p style={{ marginBottom: '8px' }}><strong>Điểm đến:</strong> <br/>{selectedInfoItem.destination || 'Vui lòng chọn dịch vụ'}</p>
               {selectedInfoItem.transport && <p style={{ marginBottom: '8px' }}><strong>Di chuyển:</strong> <br/>{selectedInfoItem.transport}</p>}
               {selectedInfoItem.notes && <p style={{ marginBottom: '8px' }}><strong>Ghi chú:</strong> <br/>{selectedInfoItem.notes}</p>}
             </div>
@@ -2221,14 +2295,16 @@ const ItineraryPage = () => {
                                       name: item.name,
                                       address: `${item.destination}, ${item.region}`,
                                       specialty: isHotel ? 'Cư trú' : isTransport ? 'Nhà xe' : 'Ăn uống',
-                                      reason: item.notes
-                                    }, 'affiliate');
+                                      reason: item.notes,
+                                      category: isHotel ? 'hotel' : isTransport ? 'transport' : 'food',
+                                      actionUrl: actionUrl
+                                    }, isHotel ? 'hotel' : isTransport ? 'transport' : 'food');
                                   }}
                                   disabled={isAdding}
                                   style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '4px' }}
                                   title="Lưu địa điểm này vào lịch trình chuyến đi"
                                 >
-                                  {isAdding ? 'Đang thêm...' : isAdded ? 'Đã thêm' : '➕ Thêm vào lịch trình'}
+                                  {isAdding ? 'Đang thêm...' : isAdded ? '✓ Đã thêm vào lịch trình' : '➕ Thêm vào lịch trình'}
                                 </button>
 
                                 <button
@@ -2360,6 +2436,140 @@ const ItineraryPage = () => {
               >
                 Mở Google Maps lớn ↗
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thông báo Đặt dịch vụ / Thêm nhà hàng vào lịch trình */}
+      {serviceNoticeModal.isOpen && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20000,
+            padding: '16px'
+          }}
+          onClick={() => setServiceNoticeModal(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div
+            className="modal-content"
+            style={{
+              maxWidth: '440px',
+              width: '100%',
+              padding: '28px 24px',
+              borderRadius: '24px',
+              background: '#ffffff',
+              textAlign: 'center',
+              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.25)',
+              border: serviceNoticeModal.type === 'restaurant_added' ? '2px solid #10b981' : '2px solid #f59e0b'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                margin: '0 auto 16px auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: serviceNoticeModal.type === 'restaurant_added' ? '#ecfdf5' : '#fef3c7',
+                color: serviceNoticeModal.type === 'restaurant_added' ? '#059669' : '#d97706'
+              }}
+            >
+              {serviceNoticeModal.type === 'restaurant_added' ? (
+                <CheckCircle size={30} />
+              ) : (
+                <AlertCircle size={30} />
+              )}
+            </div>
+
+            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 10px 0' }}>
+              {serviceNoticeModal.type === 'restaurant_added'
+                ? 'Đã lưu nhà hàng vào lịch trình!'
+                : 'Vui lòng đặt dịch vụ'}
+            </h3>
+
+            {serviceNoticeModal.type === 'restaurant_added' ? (
+              <div style={{ fontSize: '14.5px', color: '#334155', lineHeight: '1.6', marginBottom: '22px', textAlign: 'left', background: '#f8fafc', padding: '14px 16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 6px 0' }}>
+                  <strong>Chặng hoạt động:</strong> {serviceNoticeModal.stageTitle}
+                </p>
+                <p style={{ margin: '0 0 6px 0' }}>
+                  <strong>Điểm đến mới:</strong> <span style={{ color: '#059669', fontWeight: '700' }}>{serviceNoticeModal.serviceName}</span>
+                </p>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                  ✓ Đã cập nhật vào mục <strong>Điểm đến</strong> trong phần <em>Thông tin chi tiết (i)</em> của chặng.
+                </p>
+              </div>
+            ) : (
+              <div style={{ fontSize: '15px', color: '#334155', lineHeight: '1.6', marginBottom: '22px' }}>
+                <p style={{ margin: '0 0 8px 0', fontWeight: '600', color: '#b45309' }}>
+                  Vui lòng đặt dịch vụ để thêm vào lịch trình!
+                </p>
+                <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b' }}>
+                  Đối với dịch vụ <strong>{serviceNoticeModal.serviceCategory === 'hotel' ? 'đặt phòng lưu trú' : 'đặt vé xe di chuyển'}</strong> ({serviceNoticeModal.serviceName}), bạn vui lòng bấm đặt dịch vụ trước khi thêm vào lịch trình chuyến đi.
+                </p>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {serviceNoticeModal.type === 'restaurant_added' && serviceNoticeModal.updatedItem && (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ background: '#059669', color: '#ffffff', padding: '10px 18px', borderRadius: '12px', fontWeight: '600', border: 'none', cursor: 'pointer' }}
+                  onClick={() => {
+                    const itemToView = serviceNoticeModal.updatedItem;
+                    setServiceNoticeModal(prev => ({ ...prev, isOpen: false }));
+                    handleCloseFoodModal();
+                    setSelectedInfoItem(itemToView);
+                  }}
+                >
+                  Xem thông tin chi tiết
+                </button>
+              )}
+
+              {serviceNoticeModal.type === 'require_booking' && serviceNoticeModal.actionUrl && (
+                <a
+                  href={serviceNoticeModal.actionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: serviceNoticeModal.serviceCategory === 'hotel' ? '#2563eb' : '#16a34a',
+                    color: '#ffffff',
+                    padding: '10px 18px',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '14px'
+                  }}
+                  onClick={() => setServiceNoticeModal(prev => ({ ...prev, isOpen: false }))}
+                >
+                  <ExternalLink size={15} />
+                  {serviceNoticeModal.serviceCategory === 'hotel' ? 'Đặt phòng ngay ↗' : 'Đặt vé xe ngay ↗'}
+                </a>
+              )}
+
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: '10px 20px', borderRadius: '12px', fontWeight: '600', cursor: 'pointer' }}
+                onClick={() => setServiceNoticeModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>
