@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
+import ReactGA from 'react-ga4';
 import api from '../../services/api';
 import './Auth.css';
 
@@ -32,6 +33,9 @@ const RegisterPage = () => {
     setIsSubmitting(true);
     try {
       await api.post('/auth/register', { fullName, email, password });
+      // Gắn User ID và gửi sự kiện đăng ký thành công lên Google Analytics 4
+      ReactGA.set({ user_id: email });
+      ReactGA.event('sign_up', { method: 'Email' });
       setShowSuccessModal(true);
     } catch (err) {
       if (err.message === 'Network Error') {
@@ -123,4 +127,3 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
-

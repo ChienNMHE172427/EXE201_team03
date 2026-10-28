@@ -44,18 +44,29 @@ const Layout = ({ children }) => {
   );
 };
 
-// Khởi tạo Google Analytics (Chỉ chạy khi có ID)
-const TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID; 
+// Khởi tạo Google Analytics (Sử dụng biến môi trường hoặc fallback sang mã GA4 của dự án)
+const TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID || 'G-38QHGD89YJ';
 if (TRACKING_ID) {
   ReactGA.initialize(TRACKING_ID);
 }
 
-// Component tự động track mỗi khi người dùng chuyển trang
+// Component tự động track mỗi khi người dùng chuyển trang và đồng bộ user_id
 const RouteTracker = () => {
   const location = useLocation();
-  
+
   useEffect(() => {
     if (TRACKING_ID) {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          if (parsedUser?.email) {
+            ReactGA.set({ user_id: parsedUser.email });
+          }
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
       ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
     }
   }, [location]);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 import api from '../services/api';
 const Sidebar = () => {
   const [user, setUser] = useState(null);
@@ -41,7 +42,9 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('currentTripId');
+    ReactGA.set({ user_id: null });
     window.location.href = '/';
   };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 import api from '../../services/api';
 import './Auth.css';
 
@@ -18,6 +19,10 @@ const LoginPage = () => {
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify({ email: res.data.email, name: res.data.fullName, role: res.data.role, avatarUrl: res.data.avatarUrl }));
       
+      // Đồng bộ User ID và gửi sự kiện đăng nhập lên Google Analytics 4
+      ReactGA.set({ user_id: res.data.email });
+      ReactGA.event('login', { method: 'Email' });
+
       if (res.data.role === 'Admin') {
         navigate('/admin/dashboard');
       } else {

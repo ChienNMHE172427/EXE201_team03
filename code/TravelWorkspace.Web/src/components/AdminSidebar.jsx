@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import ReactGA from 'react-ga4';
 
 const AdminSidebar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    ReactGA.set({ user_id: null });
     window.location.href = '/';
   };
 
