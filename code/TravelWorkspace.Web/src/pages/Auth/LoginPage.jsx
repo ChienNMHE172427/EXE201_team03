@@ -4,6 +4,8 @@ import ReactGA from 'react-ga4';
 import api from '../../services/api';
 import './Auth.css';
 
+const TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID || 'G-38QHGD89YJ';
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,9 +21,10 @@ const LoginPage = () => {
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify({ email: res.data.email, name: res.data.fullName, role: res.data.role, avatarUrl: res.data.avatarUrl }));
       
-      // Đồng bộ User ID và gửi sự kiện đăng nhập lên Google Analytics 4
+      // Đồng bộ User ID chuẩn GA4 config và gửi sự kiện đăng nhập lên Google Analytics 4
       ReactGA.set({ user_id: res.data.email });
-      ReactGA.event('login', { method: 'Email' });
+      ReactGA.gtag('config', TRACKING_ID, { user_id: res.data.email });
+      ReactGA.event('login', { method: 'Email', user_id: res.data.email });
 
       if (res.data.role === 'Admin') {
         navigate('/admin/dashboard');

@@ -5,6 +5,8 @@ import ReactGA from 'react-ga4';
 import api from '../../services/api';
 import './Auth.css';
 
+const TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID || 'G-38QHGD89YJ';
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
@@ -33,9 +35,10 @@ const RegisterPage = () => {
     setIsSubmitting(true);
     try {
       await api.post('/auth/register', { fullName, email, password });
-      // Gắn User ID và gửi sự kiện đăng ký thành công lên Google Analytics 4
+      // Gắn User ID chuẩn GA4 config và gửi sự kiện đăng ký thành công lên Google Analytics 4
       ReactGA.set({ user_id: email });
-      ReactGA.event('sign_up', { method: 'Email' });
+      ReactGA.gtag('config', TRACKING_ID, { user_id: email });
+      ReactGA.event('sign_up', { method: 'Email', user_id: email });
       setShowSuccessModal(true);
     } catch (err) {
       if (err.message === 'Network Error') {

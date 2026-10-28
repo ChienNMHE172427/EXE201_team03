@@ -56,18 +56,25 @@ const RouteTracker = () => {
 
   useEffect(() => {
     if (TRACKING_ID) {
+      let currentUserId = undefined;
       try {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
           if (parsedUser?.email) {
-            ReactGA.set({ user_id: parsedUser.email });
+            currentUserId = parsedUser.email;
+            ReactGA.set({ user_id: currentUserId });
+            ReactGA.gtag('config', TRACKING_ID, { user_id: currentUserId });
           }
         }
       } catch {
         // Ignore JSON parse errors
       }
-      ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+      ReactGA.send({
+        hitType: "pageview",
+        page: location.pathname + location.search,
+        ...(currentUserId ? { user_id: currentUserId } : {})
+      });
     }
   }, [location]);
 
