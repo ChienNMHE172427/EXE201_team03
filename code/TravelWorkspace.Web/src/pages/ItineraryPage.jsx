@@ -13,6 +13,7 @@ import GoongMapView from '../components/GoongMapView';
 import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb, Share2, Globe, Lock, Loader2, ExternalLink } from 'lucide-react';
 import servicesData from '../servicesData.json';
 import hotelLinks from '../hotelLinks.json';
+import getVexereLink from '../utils/getVexereLink';
 import './ItineraryPage.css';
 
 const ItineraryPage = () => {
@@ -454,59 +455,84 @@ const ItineraryPage = () => {
 
   // Trích xuất địa danh ngắn gọn của chặng / chuyến đi để tự động điền vào ô tìm kiếm dịch vụ
   const extractLocationKeyword = (item, tripData) => {
-    // Helper làm sạch chuỗi địa danh
-    const cleanWord = (str) => {
-      if (!str) return '';
-      let s = str.trim();
-      // Bỏ các từ phụ thường gặp ở đầu
-      s = s.replace(/^(khám phá|tham quan|check-in|checkin|du lịch|đến|tới|ở|nghỉ ngơi tại|khách sạn|homestay tại|resort tại)\s+/i, '');
-      const parts = s.split(',').map(p => p.trim()).filter(Boolean);
-      return parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+    // Danh sách các điểm đến du lịch cụ thể (ưu tiên từ địa danh chi tiết đến tỉnh/thành)
+    const knownDestinations = [
+      'cô tô', 'quan lạn', 'minh châu', 'bình liêu', 'yên tử', 'bãi cháy', 'hạ long', 'tuần châu', 'vân đồn',
+      'cát bà', 'lan hạ',
+      'fansipan', 'ô quy hồ', 'cát cát', 'mường hoa', 'bắc hà', 'sa pa', 'sapa',
+      'tràng an', 'tam cốc', 'bích động', 'bái đính', 'hoa lư', 'hang múa', 'vân long',
+      'lũng cú', 'mã pí lèng', 'nho quế', 'đồng văn', 'hoàng su phì', 'quản bạ', 'mèo vạc',
+      'bản giốc', 'ngườm ngao', 'pác bó', 'thăng hen', 'mắt thần', 'núi thủng', 'trùng khánh',
+      'quảng ninh', 'ninh bình', 'lào cai', 'hải phòng', 'hà giang', 'cao bằng',
+      'đà nẵng', 'hội an', 'đà lạt', 'phú quốc', 'nha trang', 'huế', 'quy nhơn', 'hà nội'
+    ];
+
+    const formatMatchedLoc = (loc) => {
+      if (loc === 'sapa') return 'Sa Pa';
+      return loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     };
 
-    // 1. Kiểm tra location của chặng (ví dụ: "Tam Cốc, Ninh Bình" -> "Ninh Bình", "Bãi Cháy, Hạ Long" -> "Hạ Long")
-    if (item?.location && item.location.trim()) {
-      const loc = cleanWord(item.location);
-      if (loc) return loc;
-    }
+    // Helper làm sạch tên điểm đến (ví dụ "Đảo Cô Tô, Quảng Ninh" -> "Cô Tô")
+    const cleanDestinationName = (str) => {
+      if (!str) return '';
+      let s = str.trim();
+      const firstPart = s.split(',')[0].trim();
+      return firstPart
+        .replace(/^(khám phá|tham quan|check-in|checkin|du lịch|đến|tới|ở|nghỉ ngơi tại|khách sạn|homestay tại|resort tại|đảo|vịnh|danh thắng|quần thể|khu di tích|cố đô|đỉnh|đèo|bản|thung lũng|phố cổ|thác|động|hồ|cột cờ)\s+/i, '')
+        .trim() || firstPart;
+    };
 
-    // 2. Kiểm tra destination của chặng
-    if (item?.destination && item.destination.trim() && item.destination !== 'Vui lòng chọn dịch vụ') {
-      const dest = cleanWord(item.destination);
-      if (dest) return dest;
-    }
+    const originShort = getShortLocation(tripData?.origin || '').toLowerCase().trim();
 
-    // 3. Phân tích tiêu đề chặng (item.title)
+    // 1. Ưu tiên kiểm tra điểm đến chính của chuyến đi (tripData.destination) và phần điểm đến trong tiêu đề chặng
     if (item?.title && item.title.trim()) {
-      const titleLower = item.title.toLowerCase();
-      // Quét nhanh các địa danh phổ biến trong hệ thống
-      const knownLocations = [
-        'hạ long', 'bãi cháy', 'yên tử', 'cô tô', 'quan lạn', 'quảng ninh',
-        'ninh bình', 'tràng an', 'tam cốc', 'bái đính', 'vân long',
-        'sa pa', 'sapa', 'bắc hà', 'ô quy hồ', 'lào cai',
-        'cát bà', 'lan hạ', 'hải phòng',
-        'đà nẵng', 'hà nội', 'hội an', 'đà lạt', 'phú quốc', 'nha trang', 'huế', 'quy nhơn'
-      ];
-      for (const loc of knownLocations) {
-        if (titleLower.includes(loc)) {
-          return loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        }
+      let titleToScan = item.title;
+      if (/\s+(?:đi|đến)\s+/i.test(titleToScan)) {
+        const parts = titleToScan.split(/\s+(?:đi|đến)\s+/i);
+        titleToScan = parts[parts.length - 1];
       }
-
-      // Nếu tiêu đề dạng "Từ A đi B" hoặc "Khởi hành từ A đến B"
-      if (titleLower.includes(' đi ') || titleLower.includes(' đến ')) {
-        const parts = item.title.split(/\s+(?:đi|đến)\s+/i);
-        if (parts.length > 1) {
-          const destPart = cleanWord(parts[1]);
-          if (destPart) return destPart;
+      const titleLower = titleToScan.toLowerCase();
+      for (const loc of knownDestinations) {
+        if (loc === originShort && tripData?.destination && !tripData.destination.toLowerCase().includes(loc)) {
+          continue;
+        }
+        if (titleLower.includes(loc)) {
+          return formatMatchedLoc(loc);
         }
       }
     }
 
-    // 4. Lấy từ điểm đến chính của toàn bộ chuyến đi (trip.destination)
+    // 2. Kiểm tra từ điểm đến chính của toàn bộ chuyến đi (tripData.destination) - ví dụ: "Đảo Cô Tô" -> "Cô Tô"
     if (tripData?.destination && tripData.destination.trim()) {
-      const dest = cleanWord(tripData.destination);
+      const tripDestLower = tripData.destination.toLowerCase();
+      for (const loc of knownDestinations) {
+        if (tripDestLower.includes(loc)) {
+          return formatMatchedLoc(loc);
+        }
+      }
+      const cleanedTripDest = cleanDestinationName(tripData.destination);
+      if (cleanedTripDest) return cleanedTripDest;
+    }
+
+    // 3. Kiểm tra destination của chặng (nếu không phải mặc định)
+    if (item?.destination && item.destination.trim() && item.destination !== 'Vui lòng chọn dịch vụ') {
+      const itemDestLower = item.destination.toLowerCase();
+      for (const loc of knownDestinations) {
+        if (itemDestLower.includes(loc)) {
+          return formatMatchedLoc(loc);
+        }
+      }
+      const dest = cleanDestinationName(item.destination);
       if (dest) return dest;
+    }
+
+    // 4. Chỉ lấy item.location nếu nó khác điểm xuất phát (origin) của chuyến đi
+    if (item?.location && item.location.trim()) {
+      const itemLocShort = getShortLocation(item.location).toLowerCase().trim();
+      if (!originShort || itemLocShort !== originShort) {
+        const loc = cleanDestinationName(item.location);
+        if (loc) return loc;
+      }
     }
 
     return '';
@@ -516,60 +542,178 @@ const ItineraryPage = () => {
   const fetchAffiliateServices = async (cat) => {
     setLoadingAffiliate(true);
     try {
-      // 1. DỊCH VỤ NHÀ XE (TRANSPORT) - Tích hợp Vexere chuẩn 5 khu vực du lịch trọng điểm
+      // 1. DỊCH VỤ NHÀ XE (TRANSPORT) - Tích hợp Vexere đầy đủ tất cả các tuyến & điểm đến
       if (cat === 'transport') {
         const transList = [
+          // Quảng Ninh (Hạ Long, Bãi Cháy, Cô Tô, Quan Lạn, Yên Tử, Bình Liêu)
           {
-            id: 'vexere-qn',
-            name: 'Nhà xe Quảng Ninh',
+            id: 'vexere-qn-coto',
+            name: 'Tàu cao tốc & Xe Limousine đi Đảo Cô Tô - Quan Lạn',
             category: 'transport',
-            destination: 'Hạ Long, Bãi Cháy, Cô Tô, Vân Đồn, Cẩm Phả, Yên Tử',
+            destination: 'Đảo Cô Tô, Quan Lạn, Cảng Ao Tiên, Vân Đồn',
             region: 'Quảng Ninh',
-            notes: 'Xe khách & Limousine VIP Hà Nội ↔ Quảng Ninh qua Vexere. Đón trả tận nơi tại Hạ Long, Bãi Cháy, Tuần Châu, Vân Đồn, Cảng Ao Tiên.',
+            notes: 'Kết nối xe Limousine VIP Hà Nội ↔ Cảng Ao Tiên và tàu cao tốc đi Đảo Cô Tô, Đảo Quan Lạn qua Vexere.',
             rating: 4.9,
             affiliateUrl: 'https://shorten.asia/BmJJ5wE9'
           },
           {
-            id: 'vexere-lc',
-            name: 'Nhà xe Lào Cai',
+            id: 'vexere-qn-hl',
+            name: 'Xe Limousine Phúc Xuyên VIP (Hà Nội - Hạ Long - Bãi Cháy)',
             category: 'transport',
-            destination: 'Sa Pa, Fansipan, Bắc Hà, Cát Cát, Mường Hoa, Ô Quy Hồ',
+            destination: 'Vịnh Hạ Long, Bãi Cháy, Tuần Châu',
+            region: 'Quảng Ninh',
+            notes: 'Dàn xe Limousine VIP cao cấp qua Vexere, đón trả tận nơi tại Bãi Cháy, Hòn Gai, Tuần Châu, Hạ Long.',
+            rating: 4.9,
+            affiliateUrl: 'https://shorten.asia/BmJJ5wE9'
+          },
+          {
+            id: 'vexere-qn-vdx',
+            name: 'Xe Vân Đồn Xanh Limousine (Hà Nội - Hạ Long - Vân Đồn - Cô Tô)',
+            category: 'transport',
+            destination: 'Vịnh Hạ Long, Cô Tô, Vân Đồn, Cẩm Phả',
+            region: 'Quảng Ninh',
+            notes: 'Chạy cao tốc Hà Nội - Hạ Long - Cảng Ao Tiên (Cô Tô) êm ái, ghế massage, wifi tốc độ cao.',
+            rating: 4.9,
+            affiliateUrl: 'https://shorten.asia/BmJJ5wE9'
+          },
+          {
+            id: 'vexere-qn-yt',
+            name: 'Nhà xe Đức Phúc & Limousine đi Yên Tử - Bình Liêu',
+            category: 'transport',
+            destination: 'Danh thắng Yên Tử, Uông Bí, Bình Liêu',
+            region: 'Quảng Ninh',
+            notes: 'Tuyến xe khách & Limousine chất lượng cao đi Yên Tử, Uông Bí, Bình Liêu qua Vexere.',
+            rating: 4.8,
+            affiliateUrl: 'https://shorten.asia/BmJJ5wE9'
+          },
+          // Lào Cai / Sa Pa
+          {
+            id: 'vexere-lc-sv',
+            name: 'Xe Cabin Cung Điện Sao Việt (Hà Nội - Sa Pa - Fansipan)',
+            category: 'transport',
+            destination: 'Sa Pa, Đỉnh Fansipan, Cát Cát, Mường Hoa, Ô Quy Hồ',
             region: 'Lào Cai',
-            notes: 'Xe cabin cung điện đôi, xe giường nằm cao cấp & Limousine VIP Hà Nội ↔ Sa Pa, Lào Cai qua Vexere. Đón trả tận nơi các khách sạn Sa Pa.',
+            notes: 'Tuyến xe cabin VIP đôi và đơn cao cấp qua Vexere, đón trả tận nơi tại trung tâm thị xã Sa Pa.',
             rating: 4.9,
             affiliateUrl: 'https://shorten.asia/QGuJ9Fue'
           },
           {
-            id: 'vexere-nb',
-            name: 'Nhà xe Ninh Bình',
+            id: 'vexere-lc-fe',
+            name: 'Xe Khách Fansipan Express & Inter Bus Lines (Hà Nội - Sa Pa)',
             category: 'transport',
-            destination: 'Tràng An, Tam Cốc, Bích Động, Bái Đính, Hang Múa, Hoa Lư',
+            destination: 'Sa Pa, Bản Cát Cát, Thung lũng Mường Hoa, Đèo Ô Quy Hồ',
+            region: 'Lào Cai',
+            notes: 'Xe giường nằm & cabin cao cấp phục vụ khách du lịch đi Sa Pa qua Vexere.',
+            rating: 4.8,
+            affiliateUrl: 'https://shorten.asia/QGuJ9Fue'
+          },
+          {
+            id: 'vexere-lc-bh',
+            name: 'Xe Khách Hà Sơn Hải Vân (Hà Nội - Lào Cai - Bắc Hà)',
+            category: 'transport',
+            destination: 'Bắc Hà, Dinh Hoàng A Tưởng, Sa Pa',
+            region: 'Lào Cai',
+            notes: 'Nhà xe uy tín hàng đầu tuyến Tây Bắc đi Lào Cai, Bắc Hà, Sa Pa qua Vexere.',
+            rating: 4.8,
+            affiliateUrl: 'https://shorten.asia/QGuJ9Fue'
+          },
+          // Ninh Bình
+          {
+            id: 'vexere-nb-ta',
+            name: 'Xe Limousine Tràng An VIP (Hà Nội - Ninh Bình)',
+            category: 'transport',
+            destination: 'Quần thể Tràng An, Tam Cốc, Bích Động, Bái Đính, Hang Múa, Hoa Lư',
             region: 'Ninh Bình',
-            notes: 'Xe Limousine 9-11 chỗ ghế massage cao cấp Hà Nội ↔ Ninh Bình qua Vexere. Chạy cao tốc êm ái, tần suất 60 phút/chuyến, trả tận điểm lưu trú.',
+            notes: 'Xe Limousine 9-11 chỗ ghế massage cao cấp qua Vexere, đón trả tận nơi tại Tam Cốc, Tràng An, Hang Múa.',
             rating: 4.9,
             affiliateUrl: 'https://shorten.asia/R3cnEDct'
           },
           {
-            id: 'vexere-hg',
-            name: 'Nhà xe Hà Giang',
+            id: 'vexere-nb-dk',
+            name: 'Nhà xe Duy Khang & Ninh Bình Excursion Limousine',
             category: 'transport',
-            destination: 'Đồng Văn, Mã Pí Lèng, Lũng Cú, Mèo Vạc, Hoàng Su Phì, Sông Nho Quế',
-            region: 'Hà Giang',
-            notes: 'Xe cabin cung điện & giường nằm cao cấp Hà Nội ↔ TP Hà Giang, Đồng Văn qua Vexere. Tài xế giàu kinh nghiệm vượt đèo dốc an toàn.',
+            destination: 'Tam Cốc - Bích Động, Cố đô Hoa Lư, Chùa Bái Đính, Hang Múa',
+            region: 'Ninh Bình',
+            notes: 'Tần suất 60 phút/chuyến, chuyên tuyến Hà Nội ↔ Ninh Bình trả tận điểm lưu trú qua Vexere.',
             rating: 4.8,
+            affiliateUrl: 'https://shorten.asia/R3cnEDct'
+          },
+          // Hà Giang
+          {
+            id: 'vexere-hg-bp',
+            name: 'Xe Cung Điện Bằng Phấn (Hà Nội - Hà Giang - Đồng Văn)',
+            category: 'transport',
+            destination: 'Cột cờ Lũng Cú, Phố cổ Đồng Văn, Mã Pí Lèng, Sông Nho Quế',
+            region: 'Hà Giang',
+            notes: 'Xe cabin cung điện đôi & đơn tiện nghi sang trọng nhất tuyến Hà Nội ↔ Hà Giang qua Vexere.',
+            rating: 4.9,
             affiliateUrl: 'https://shorten.asia/STy4Pakb'
           },
           {
-            id: 'vexere-cb',
-            name: 'Nhà xe Cao Bằng',
+            id: 'vexere-hg-qn',
+            name: 'Xe Limousine Quang Nghị & Đăng Quang (Hà Nội - Đồng Văn - Hoàng Su Phì)',
             category: 'transport',
-            destination: 'Thác Bản Giốc, Pác Bó, Động Ngườm Ngao, Hồ Thăng Hen, Núi Mắt Thần, Trùng Khánh',
+            destination: 'Phố cổ Đồng Văn, Mã Pí Lèng, Dinh Vua Mèo, Hoàng Su Phì',
+            region: 'Hà Giang',
+            notes: 'Xe VIP chuyên tuyến thẳng lên cao nguyên đá Đồng Văn, Mèo Vạc và Hoàng Su Phì qua Vexere.',
+            rating: 4.8,
+            affiliateUrl: 'https://shorten.asia/STy4Pakb'
+          },
+          // Cao Bằng
+          {
+            id: 'vexere-cb-tl',
+            name: 'Xe Limousine Thanh Ly & Hiệp Mừng (Hà Nội - Cao Bằng - Bản Giốc)',
+            category: 'transport',
+            destination: 'Thác Bản Giốc, Động Ngườm Ngao, Trùng Khánh, Hồ Thăng Hen, Mắt Thần',
             region: 'Cao Bằng',
-            notes: 'Xe Limousine & giường nằm cao cấp Hà Nội ↔ TP Cao Bằng, Thác Bản Giốc qua Vexere. Xuất bến nhiều khung giờ, đưa đón tận nơi.',
+            notes: 'Xe Limousine & giường nằm cao cấp đón trả tận nơi tại TP Cao Bằng, Thác Bản Giốc qua Vexere.',
+            rating: 4.9,
+            affiliateUrl: 'https://shorten.asia/Nck74KXF'
+          },
+          {
+            id: 'vexere-cb-kh',
+            name: 'Xe Giường Nằm Khánh Hoàn (Hà Nội - Cao Bằng - Pác Bó)',
+            category: 'transport',
+            destination: 'Khu di tích Pác Bó, Suối Lê-nin, Thác Bản Giốc, Núi Thủng',
+            region: 'Cao Bằng',
+            notes: 'Xe giường nằm hiện đại xuất bến hàng ngày đi Cao Bằng, Pác Bó qua Vexere.',
             rating: 4.8,
             affiliateUrl: 'https://shorten.asia/Nck74KXF'
           }
         ];
+
+        // Bổ sung các nhà xe chi tiết theo từng địa danh từ servicesData.json
+        if (Array.isArray(servicesData)) {
+          const existingTransNames = new Set(transList.map(t => t.name.toLowerCase()));
+          servicesData
+            .filter(x => x.category === 'Di chuyển' || x.type === 'DI CHUYỂN')
+            .forEach((r, idx) => {
+              if (existingTransNames.has((r.title || '').toLowerCase())) return;
+              const desc = r.desc || '';
+              let region = 'Quảng Ninh';
+              if (desc.includes('Fansipan') || desc.includes('Cát Cát') || desc.includes('Ô Quy Hồ') || desc.includes('Mường Hoa') || desc.includes('Bắc Hà') || desc.includes('Sa Pa')) {
+                region = 'Lào Cai';
+              } else if (desc.includes('Tràng An') || desc.includes('Tam Cốc') || desc.includes('Bái Đính') || desc.includes('Hoa Lư') || desc.includes('Hang Múa')) {
+                region = 'Ninh Bình';
+              } else if (desc.includes('Lũng Cú') || desc.includes('Mã Pí Lèng') || desc.includes('Đồng Văn') || desc.includes('Hoàng Su Phì') || desc.includes('Vương')) {
+                region = 'Hà Giang';
+              } else if (desc.includes('Bản Giốc') || desc.includes('Ngườm Ngao') || desc.includes('Pác Bó') || desc.includes('Thăng Hen') || desc.includes('Mắt thần')) {
+                region = 'Cao Bằng';
+              }
+              const cleanDest = desc.replace('Dịch vụ xe tại ', '').trim() || region;
+              transList.push({
+                id: `svc-trans-${idx}`,
+                name: r.title,
+                category: 'transport',
+                destination: cleanDest,
+                region: region,
+                notes: `${desc} - Đặt vé xe trực tuyến qua đối tác Vexere.`,
+                rating: r.rating || 4.7,
+                affiliateUrl: getVexereLink({ title: r.title, desc: r.desc, destination: cleanDest, region }, cleanDest)
+              });
+            });
+        }
+
         setAffiliateServices(transList);
         return;
       }
@@ -589,56 +733,71 @@ const ItineraryPage = () => {
           console.warn('API /all-active hotel không phản hồi, nạp danh mục khách sạn chuẩn:', apiErr);
         }
 
-        // KHO DỮ LIỆU KHÁCH SẠN ĐẦY ĐỦ CÁC VÙNG DU LỊCH TRỌNG ĐIỂM
+        // KHO DỮ LIỆU KHÁCH SẠN ĐẦY ĐỦ CÁC VÙNG DU LỊCH TRỌNG ĐIỂM (100% link shorten.asia chuẩn)
         const fullHotelList = [
-          // Ninh Bình
-          { id: 'nb-hotel-1', name: "Ninh Binh Hidden Charm Hotel & Resort", category: 'hotel', destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc, hồ bơi ngoài trời.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
-          { id: 'nb-hotel-2', name: "Tam Coc Rice Fields Resort", category: 'hotel', destination: "Tam Cốc - Bích Động", region: "Ninh Bình", notes: "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.", rating: 4.7, affiliateUrl: "https://shorten.asia/S3JcJAZ6" },
-          { id: 'nb-hotel-3', name: "Trang An Retreat", category: 'hotel', destination: "Quần thể Tràng An", region: "Ninh Bình", notes: "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình, có hồ bơi nhìn ra núi.", rating: 4.8, affiliateUrl: "https://shorten.asia/z6CQVMef" },
-          { id: 'nb-hotel-4', name: "Emeralda Resort Ninh Binh", category: 'hotel', destination: "Đầm Vân Long - Gia Viễn", region: "Ninh Bình", notes: "Resort 5 sao mang đậm kiến trúc cung đình và làng quê Bắc Bộ cổ kính cạnh khu bảo tồn Vân Long.", rating: 4.9, affiliateUrl: "https://shorten.asia/429ha1PE" },
-          { id: 'nb-hotel-5', name: "The Reed Hotel Ninh Binh", category: 'hotel', destination: "TP. Ninh Bình & Trung tâm", region: "Ninh Bình", notes: "Khách sạn 4 sao trung tâm thành phố Ninh Bình, dịch vụ cao cấp và ẩm thực phong phú.", rating: 4.7, affiliateUrl: "https://shorten.asia/JcA53PgX" },
-          { id: 'nb-hotel-6', name: "Ninh Binh Legend Hotel", category: 'hotel', destination: "TP. Ninh Bình & Tràng An", region: "Ninh Bình", notes: "Khách sạn 5 sao tiêu chuẩn quốc tế với hồ bơi vô cực và view non nước hữu tình.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
-
-          // Quảng Ninh / Hạ Long
+          // Quảng Ninh: Đảo Cô Tô, Vịnh Hạ Long, Yên Tử, Quan Lạn - Minh Châu
+          { id: 'qn-hotel-7', name: "Coto Eco Lodge", category: 'hotel', destination: "Đảo Cô Tô", region: "Quảng Ninh", notes: "Khu nhà gỗ sinh thái độc đáo bên bãi biển Hồng Vàn, Cô Tô, không gian yên tĩnh.", rating: 4.8, affiliateUrl: "https://shorten.asia/aJNpXRf4" },
+          { id: 'qn-hotel-8', name: "Coto Center Homestay", category: 'hotel', destination: "Đảo Cô Tô", region: "Quảng Ninh", notes: "Homestay ngay trung tâm thị trấn Cô Tô, gần chợ hải sản và bãi biển.", rating: 4.8, affiliateUrl: "https://shorten.asia/TADrDdnM" },
           { id: 'qn-hotel-1', name: "Halios Hotel Halong", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn trung tâm Bãi Cháy, gần bãi tắm và công viên Sun World.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
           { id: 'qn-hotel-2', name: "Halong Lavender Hotel", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Không gian nghỉ dưỡng hiện đại, view nhìn ra Vịnh Hạ Long thoáng mát.", rating: 4.7, affiliateUrl: "https://shorten.asia/S3JcJAZ6" },
           { id: 'qn-hotel-3', name: "Halong Boutique Hotel", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn phong cách Boutique sang trọng, dịch vụ chuyên nghiệp.", rating: 4.8, affiliateUrl: "https://shorten.asia/z6CQVMef" },
           { id: 'qn-hotel-4', name: "Bảo Ngọc Hotel 2", category: 'hotel', destination: "Vịnh Hạ Long & Bãi Cháy", region: "Quảng Ninh", notes: "Khách sạn tiện nghi, giá hợp lý, thuận tiện di chuyển ra bến tàu.", rating: 4.6, affiliateUrl: "https://shorten.asia/KqEEGVvj" },
-          { id: 'qn-hotel-5', name: "Legacy Yen Tu Hotel - MGallery Collection", category: 'hotel', destination: "Yên Tử", region: "Quảng Ninh", notes: "Khu nghỉ dưỡng 5 sao đẳng cấp quốc tế dưới chân núi Yên Tử, kiến trúc cung đình thời Trần.", rating: 4.9, affiliateUrl: "https://shorten.asia/429ha1PE" },
-          { id: 'qn-hotel-6', name: "Yen Tu Village", category: 'hotel', destination: "Yên Tử", region: "Quảng Ninh", notes: "Làng hành hương Yên Tử mang phong cách truyền thống yên bình, mộc mạc.", rating: 4.7, affiliateUrl: "https://shorten.asia/ezkBASAC" },
-          { id: 'qn-hotel-7', name: "Coto Eco Lodge", category: 'hotel', destination: "Đảo Cô Tô", region: "Quảng Ninh", notes: "Khu nhà gỗ sinh thái độc đáo bên bãi biển Hồng Vàn, không gian yên tĩnh.", rating: 4.8, affiliateUrl: "https://shorten.asia/aJNpXRf4" },
-          { id: 'qn-hotel-8', name: "Coto Center Homestay", category: 'hotel', destination: "Đảo Cô Tô", region: "Quảng Ninh", notes: "Homestay ngay trung tâm thị trấn Cô Tô, gần chợ hải sản và bãi biển.", rating: 4.8, affiliateUrl: "https://shorten.asia/TADrDdnM" },
-          { id: 'qn-hotel-9', name: "Angsana Quan Lan Ha Long Bay", category: 'hotel', destination: "Quan Lạn - Minh Châu", region: "Quảng Ninh", notes: "Resort cao cấp bên bờ biển Quan Lạn hoang sơ, hồ bơi và tiện ích 5 sao.", rating: 4.9, affiliateUrl: "https://shorten.asia/h6kTTSe3" },
+          { id: 'qn-hotel-5', name: "Legacy Yen Tu Hotel - MGallery Collection", category: 'hotel', destination: "Danh thắng Yên Tử", region: "Quảng Ninh", notes: "Khu nghỉ dưỡng 5 sao đẳng cấp quốc tế dưới chân núi Yên Tử, kiến trúc cung đình thời Trần.", rating: 4.9, affiliateUrl: "https://shorten.asia/429ha1PE" },
+          { id: 'qn-hotel-6', name: "Yen Tu Village", category: 'hotel', destination: "Danh thắng Yên Tử", region: "Quảng Ninh", notes: "Làng hành hương Yên Tử mang phong cách truyền thống yên bình, mộc mạc.", rating: 4.7, affiliateUrl: "https://shorten.asia/ezkBASAC" },
+          { id: 'qn-hotel-9', name: "Angsana Quan Lan Ha Long Bay", category: 'hotel', destination: "Đảo Quan Lạn - Minh Châu", region: "Quảng Ninh", notes: "Resort cao cấp bên bờ biển Quan Lạn hoang sơ, hồ bơi và tiện ích 5 sao.", rating: 4.9, affiliateUrl: "https://shorten.asia/h6kTTSe3" },
+          { id: 'qn-hotel-10', name: "Khách sạn Paloma", category: 'hotel', destination: "Đảo Quan Lạn - Minh Châu", region: "Quảng Ninh", notes: "Khách sạn sạch sẽ, đầy đủ tiện nghi gần bãi tắm Minh Châu cát trắng mịn.", rating: 4.6, affiliateUrl: "https://shorten.asia/DuUjQJBt" },
+          { id: 'qn-hotel-11', name: "Minh Châu Riverside", category: 'hotel', destination: "Đảo Quan Lạn - Minh Châu", region: "Quảng Ninh", notes: "Không gian thoáng mát ven sông, thuận tiện tắm biển và ăn hải sản tại Quan Lạn.", rating: 4.7, affiliateUrl: "https://shorten.asia/86955uGQ" },
 
           // Sa Pa / Lào Cai
-          { id: 'sp-hotel-1', name: "KK Sapa Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao sang trọng nhìn thẳng ra Thung Lũng Mường Hoa và Fansipan.", rating: 4.9, affiliateUrl: "https://shorten.asia/4mUeh5BN" },
-          { id: 'sp-hotel-2', name: "Pao's Sapa Leisure Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao đẳng cấp ôm trọn triền đồi, hồ bơi nước nóng trong nhà.", rating: 4.9, affiliateUrl: "https://shorten.asia/6pfAt6qB" },
-          { id: 'sp-hotel-3', name: "DeLaSol Sapa Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn tiện nghi trung tâm Sa Pa, view thung lũng mây bồng bềnh.", rating: 4.8, affiliateUrl: "https://shorten.asia/qruA6GRK" },
-          { id: 'sp-hotel-4', name: "Ville De Mont Mountain Resort", category: 'hotel', destination: "Thung lũng Mường Hoa", region: "Sa Pa / Lào Cai", notes: "Resort biệt thự biệt lập giữa rừng thông ở độ cao 1.550m ngắm trọn biển mây.", rating: 4.9, affiliateUrl: "https://shorten.asia/myJrNyWG" },
+          { id: 'sp-hotel-1', name: "KK Sapa Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa & Mường Hoa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao sang trọng nhìn thẳng ra Thung Lũng Mường Hoa và Fansipan.", rating: 4.9, affiliateUrl: "https://shorten.asia/4mUeh5BN" },
+          { id: 'sp-hotel-2', name: "Pao's Sapa Leisure Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa & Mường Hoa", region: "Sa Pa / Lào Cai", notes: "Khách sạn 5 sao đẳng cấp ôm trọn triền đồi, hồ bơi nước nóng trong nhà.", rating: 4.9, affiliateUrl: "https://shorten.asia/6pfAt6qB" },
+          { id: 'sp-hotel-3', name: "DeLaSol Sapa Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa & Bản Cát Cát", region: "Sa Pa / Lào Cai", notes: "Khách sạn tiện nghi trung tâm Sa Pa, view thung lũng mây bồng bềnh.", rating: 4.8, affiliateUrl: "https://shorten.asia/qruA6GRK" },
+          { id: 'sp-hotel-4', name: "Ville De Mont Mountain Resort", category: 'hotel', destination: "Thung lũng Mường Hoa & Sa Pa", region: "Sa Pa / Lào Cai", notes: "Resort biệt thự biệt lập giữa rừng thông ở độ cao 1.550m ngắm trọn biển mây.", rating: 4.9, affiliateUrl: "https://shorten.asia/myJrNyWG" },
+          { id: 'sp-hotel-5', name: "Nomadtrails Boutique Hotel", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa & Bản Cát Cát", region: "Sa Pa / Lào Cai", notes: "Phong cách Boutique độc đáo, vị trí trung tâm thuận tiện dạo phố đêm Sa Pa.", rating: 4.7, affiliateUrl: "https://shorten.asia/gBMqS1D4" },
+          { id: 'sp-hotel-6', name: "Sapa House Hotel Halal Certified", category: 'hotel', destination: "Trung tâm Thị trấn Sa Pa", region: "Sa Pa / Lào Cai", notes: "Khách sạn ấm cúng ngay gần Nhà Thờ Đá Sa Pa, dịch vụ thân thiện.", rating: 4.7, affiliateUrl: "https://shorten.asia/f4A5neZa" },
+          { id: 'sp-hotel-7', name: "Heaven Gate Hotel O Quy Ho", category: 'hotel', destination: "Đèo Ô Quy Hồ & Đỉnh Fansipan", region: "Sa Pa / Lào Cai", notes: "Khách sạn ngay Cổng Trời Ô Quy Hồ, điểm săn mây và hoàng hôn ngoạn mục nhất Sa Pa.", rating: 4.8, affiliateUrl: "https://shorten.asia/kC4X5VmV" },
+          { id: 'sp-hotel-8', name: "Fansipan View Hotel", category: 'hotel', destination: "Đỉnh Fansipan & Sa Pa", region: "Sa Pa / Lào Cai", notes: "Tầm nhìn bao quát đỉnh Fansipan hùng vĩ, gần ga cáp treo Sun World.", rating: 4.7, affiliateUrl: "https://shorten.asia/YHdteHQb" },
+          { id: 'sp-hotel-9', name: "Bình Bản Liền Homestay", category: 'hotel', destination: "Bắc Hà & Dinh Hoàng A Tưởng", region: "Sa Pa / Lào Cai", notes: "Trải nghiệm nhà sàn truyền thống giữa những đồi chè shan tuyết cổ thụ Bản Liền, Bắc Hà.", rating: 4.8, affiliateUrl: "https://shorten.asia/mN1edBR2" },
+          { id: 'sp-hotel-10', name: "Sa House Bắc Hà", category: 'hotel', destination: "Bắc Hà & Dinh Hoàng A Tưởng", region: "Sa Pa / Lào Cai", notes: "Homestay xinh xắn tại cao nguyên trắng Bắc Hà, gần Dinh Hoàng A Tưởng.", rating: 4.7, affiliateUrl: "https://shorten.asia/v91VFBmc" },
+          { id: 'sp-hotel-11', name: "Ngan Nga Legend", category: 'hotel', destination: "Bắc Hà & Dinh Hoàng A Tưởng", region: "Sa Pa / Lào Cai", notes: "Khách sạn trung tâm thị trấn Bắc Hà, thuận tiện tham quan chợ phiên cuối tuần.", rating: 4.6, affiliateUrl: "https://shorten.asia/NhPsy688" },
+
+          // Ninh Bình
+          { id: 'nb-hotel-1', name: "Ninh Binh Hidden Charm Hotel & Resort", category: 'hotel', destination: "Tam Cốc - Bích Động & Hang Múa", region: "Ninh Bình", notes: "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc, hồ bơi ngoài trời.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
+          { id: 'nb-hotel-2', name: "Tam Coc Rice Fields Resort", category: 'hotel', destination: "Tam Cốc - Bích Động & Hang Múa", region: "Ninh Bình", notes: "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.", rating: 4.7, affiliateUrl: "https://shorten.asia/S3JcJAZ6" },
+          { id: 'nb-hotel-3', name: "Trang An Retreat", category: 'hotel', destination: "Quần thể Tràng An & Cố đô Hoa Lư", region: "Ninh Bình", notes: "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình, có hồ bơi nhìn ra núi.", rating: 4.8, affiliateUrl: "https://shorten.asia/z6CQVMef" },
+          { id: 'nb-hotel-4', name: "Emeralda Resort Ninh Binh", category: 'hotel', destination: "Chùa Bái Đính & Đầm Vân Long", region: "Ninh Bình", notes: "Resort 5 sao mang đậm kiến trúc cung đình và làng quê Bắc Bộ cổ kính.", rating: 4.9, affiliateUrl: "https://shorten.asia/429ha1PE" },
+          { id: 'nb-hotel-5', name: "The Reed Hotel Ninh Binh", category: 'hotel', destination: "TP. Ninh Bình, Tràng An & Hoa Lư", region: "Ninh Bình", notes: "Khách sạn 4 sao trung tâm thành phố Ninh Bình, dịch vụ cao cấp và ẩm thực phong phú.", rating: 4.7, affiliateUrl: "https://shorten.asia/JcA53PgX" },
+          { id: 'nb-hotel-6', name: "Ninh Binh Legend Hotel", category: 'hotel', destination: "TP. Ninh Bình, Tràng An & Bái Đính", region: "Ninh Bình", notes: "Khách sạn 5 sao tiêu chuẩn quốc tế với hồ bơi vô cực và view non nước hữu tình.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
 
           // Hải Phòng / Cát Bà
-          { id: 'hp-hotel-1', name: "Khách sạn Giấc Mơ Cát Bà", category: 'hotel', destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.", rating: 4.7, affiliateUrl: "https://shorten.asia/bVfmwTFr" },
-          { id: 'hp-hotel-2', name: "CatBa BackPackers Hostel & Pool Bar", category: 'hotel', destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Hostel phong cách trẻ trung năng động có hồ bơi ngoài trời và quầy bar.", rating: 4.8, affiliateUrl: "https://shorten.asia/s8QFsSzn" },
-          { id: 'hp-hotel-3', name: "Cat Ba Wonder Hotel", category: 'hotel', destination: "Đảo Cát Bà", region: "Hải Phòng", notes: "Khách sạn hiện đại ngay mặt đường chính thị trấn Cát Bà, gần bãi tắm Cát Cò.", rating: 4.7, affiliateUrl: "https://shorten.asia/pGCwVAfK" },
+          { id: 'hp-hotel-1', name: "Khách sạn Giấc Mơ Cát Bà", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.", rating: 4.7, affiliateUrl: "https://shorten.asia/bVfmwTFr" },
+          { id: 'hp-hotel-2', name: "CatBa BackPackers Hostel & Pool Bar", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Hostel phong cách trẻ trung năng động có hồ bơi ngoài trời và quầy bar.", rating: 4.8, affiliateUrl: "https://shorten.asia/s8QFsSzn" },
+          { id: 'hp-hotel-3', name: "Cat Ba Wonder Hotel", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Khách sạn hiện đại ngay mặt đường chính thị trấn Cát Bà, gần bãi tắm Cát Cò.", rating: 4.7, affiliateUrl: "https://shorten.asia/pGCwVAfK" },
 
           // Hà Giang & Cao Bằng
-          { id: 'hg-hotel-1', name: "Đồng Văn Eco Stone House", category: 'hotel', destination: "Phố cổ Đồng Văn", region: "Hà Giang", notes: "Nhà đá truyền thống của người H'Mông độc đáo giữa lòng phố cổ Đồng Văn.", rating: 4.8, affiliateUrl: "https://shorten.asia/STy4Pakb" },
-          { id: 'hg-hotel-2', name: "H'mong Village Resort", category: 'hotel', destination: "Quản Bạ", region: "Hà Giang", notes: "Khu nghỉ dưỡng bungalow quẩy tấu độc đáo giữa núi rừng Quản Bạ hùng vĩ.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/H'mong+Village+Resort+Ha+Giang" },
-          { id: 'cb-hotel-1', name: "Bản Giốc Resort", category: 'hotel', destination: "Thác Bản Giốc & Trùng Khánh", region: "Cao Bằng", notes: "Resort nghỉ dưỡng view nhìn trực diện dòng thác Bản Giốc hùng vĩ.", rating: 4.8, affiliateUrl: "https://shorten.asia/Nck74KXF" },
-          { id: 'cb-hotel-2', name: "Max Boutique Hotel Cao Bằng", category: 'hotel', destination: "Trung tâm TP. Cao Bằng", region: "Cao Bằng", notes: "Khách sạn tiện nghi sang trọng ngay trung tâm thành phố Cao Bằng.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/Max+Boutique+Hotel+Cao+Bang" },
-
-          // Đà Nẵng, Hà Nội, Hội An, Đà Lạt
-          { id: 'dn-hotel-1', name: "Novotel Danang Premier Han River", category: 'hotel', destination: "Bạch Đằng, Hải Châu", region: "Đà Nẵng", notes: "Khách sạn 5 sao biểu tượng ven sông Hàn với quán bar tầng thượng ngắm trọn thành phố.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/Novotel+Danang+Premier+Han+River" },
-          { id: 'dn-hotel-2', name: "TMS Hotel Da Nang Beach", category: 'hotel', destination: "Võ Nguyên Giáp, Mỹ Khê", region: "Đà Nẵng", notes: "Khách sạn 5 sao sát bờ biển Mỹ Khê với hồ bơi vô cực trên tầng thượng cực đẹp.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/TMS+Hotel+Da+Nang+Beach" },
-          { id: 'hn-hotel-1', name: "The Oriental Jade Hotel", category: 'hotel', destination: "Hàng Trống, Hoàn Kiếm", region: "Hà Nội", notes: "Khách sạn Boutique 5 sao sang trọng ngay sát Hồ Gươm và phố cổ Hà Nội.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/The+Oriental+Jade+Hotel+Hanoi" },
-          { id: 'hn-hotel-2', name: "Sofitel Legend Metropole Hanoi", category: 'hotel', destination: "Ngô Quyền, Hoàn Kiếm", region: "Hà Nội", notes: "Khách sạn 5 sao lịch sử sang trọng bậc nhất thủ đô phong cách Pháp cổ.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/Sofitel+Legend+Metropole+Hanoi" },
-          { id: 'ha-hotel-1', name: "La Siesta Hoi An Resort & Spa", category: 'hotel', destination: "Thanh Hà, Phố Cổ", region: "Hội An", notes: "Resort boutique đẳng cấp với khu vườn nhiệt đới và 4 hồ bơi tuyệt đẹp.", rating: 4.9, affiliateUrl: "https://www.google.com/maps/search/La+Siesta+Hoi+An+Resort" },
-          { id: 'dl-hotel-1', name: "Colline Hotel Dalat", category: 'hotel', destination: "Phan Bội Châu, Trung tâm", region: "Đà Lạt", notes: "Khách sạn kiến trúc châu Âu hiện đại bậc nhất ngay cạnh chợ Đà Lạt.", rating: 4.8, affiliateUrl: "https://www.google.com/maps/search/Colline+Hotel+Dalat" }
+          { id: 'hg-hotel-1', name: "Đồng Văn Eco Stone House", category: 'hotel', destination: "Phố cổ Đồng Văn, Lũng Cú & Mã Pí Lèng", region: "Hà Giang", notes: "Nhà đá truyền thống của người H'Mông độc đáo giữa lòng phố cổ Đồng Văn.", rating: 4.8, affiliateUrl: "https://shorten.asia/STy4Pakb" },
+          { id: 'hg-hotel-2', name: "H'mong Village Resort", category: 'hotel', destination: "Quản Bạ, Hoàng Su Phì & Dinh Vua Mèo", region: "Hà Giang", notes: "Khu nghỉ dưỡng bungalow quẩy tấu độc đáo giữa núi rừng Hà Giang hùng vĩ.", rating: 4.9, affiliateUrl: "https://shorten.asia/STy4Pakb" },
+          { id: 'cb-hotel-1', name: "Bản Giốc Resort", category: 'hotel', destination: "Thác Bản Giốc, Động Ngườm Ngao & Trùng Khánh", region: "Cao Bằng", notes: "Resort nghỉ dưỡng view nhìn trực diện dòng thác Bản Giốc hùng vĩ.", rating: 4.8, affiliateUrl: "https://shorten.asia/Nck74KXF" },
+          { id: 'cb-hotel-2', name: "Max Boutique Hotel Cao Bằng", category: 'hotel', destination: "TP. Cao Bằng, Pác Bó, Hồ Thăng Hen & Núi Mắt Thần", region: "Cao Bằng", notes: "Khách sạn tiện nghi sang trọng ngay trung tâm thành phố Cao Bằng.", rating: 4.8, affiliateUrl: "https://shorten.asia/Nck74KXF" }
         ];
 
+        // Map tra cứu URL chuẩn theo tên khách sạn để đảm bảo 100% có link affiliate shorten.asia
+        const fallbackUrlByName = {};
+        fullHotelList.forEach(h => {
+          fallbackUrlByName[h.name.toLowerCase().trim()] = h.affiliateUrl;
+        });
+
+        const normalizedBackend = backendHotels.map(h => {
+          const nameKey = (h.name || '').toLowerCase().trim();
+          const validUrl = (h.affiliateUrl && h.affiliateUrl.includes('shorten.asia'))
+            ? h.affiliateUrl
+            : (hotelLinks[h.name] || fallbackUrlByName[nameKey] || h.affiliateUrl || 'https://shorten.asia/JcA53PgX');
+          return { ...h, affiliateUrl: validUrl };
+        });
+
         // Gộp dữ liệu an toàn từ backend với danh mục chuẩn (không trùng tên)
-        const combined = [...backendHotels];
-        const existingNames = new Set(backendHotels.map(h => (h.name || '').toLowerCase().trim()));
+        const combined = [...normalizedBackend];
+        const existingNames = new Set(normalizedBackend.map(h => (h.name || '').toLowerCase().trim()));
         fullHotelList.forEach(h => {
           if (!existingNames.has((h.name || '').toLowerCase().trim())) {
             combined.push(h);
