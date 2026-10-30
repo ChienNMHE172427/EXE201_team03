@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ReactGA from 'react-ga4';
+import { hashEmailToUserId, TRACKING_ID } from './utils/analytics';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
@@ -45,7 +46,6 @@ const Layout = ({ children }) => {
 };
 
 // Khởi tạo Google Analytics (Sử dụng biến môi trường hoặc fallback sang mã GA4 của dự án)
-const TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID || 'G-38QHGD89YJ';
 if (TRACKING_ID) {
   ReactGA.initialize(TRACKING_ID);
 }
@@ -62,9 +62,8 @@ const RouteTracker = () => {
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
           if (parsedUser?.email) {
-            currentUserId = parsedUser.email;
+            currentUserId = hashEmailToUserId(parsedUser.email);
             ReactGA.set({ user_id: currentUserId });
-            ReactGA.gtag('config', TRACKING_ID, { user_id: currentUserId });
           }
         }
       } catch {

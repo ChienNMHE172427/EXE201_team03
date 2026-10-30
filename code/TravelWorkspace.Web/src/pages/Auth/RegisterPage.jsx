@@ -3,9 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import ReactGA from 'react-ga4';
 import api from '../../services/api';
+import { trackSignUp, TRACKING_ID } from '../../utils/analytics';
 import './Auth.css';
-
-const TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID || 'G-38QHGD89YJ';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -35,10 +34,8 @@ const RegisterPage = () => {
     setIsSubmitting(true);
     try {
       await api.post('/auth/register', { fullName, email, password });
-      // Gắn User ID chuẩn GA4 config và gửi sự kiện đăng ký thành công lên Google Analytics 4
-      ReactGA.set({ user_id: email });
-      ReactGA.gtag('config', TRACKING_ID, { user_id: email });
-      ReactGA.event('sign_up', { method: 'Email', user_id: email });
+      // Gửi sự kiện đăng ký thành công lên Google Analytics 4 (Chuẩn Google PII Policy)
+      trackSignUp(email);
       setShowSuccessModal(true);
     } catch (err) {
       if (err.message === 'Network Error') {
