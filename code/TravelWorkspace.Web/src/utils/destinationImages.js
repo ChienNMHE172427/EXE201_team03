@@ -42,26 +42,49 @@ export const removeVietnameseTones = (str) => {
     .trim();
 };
 
-// Kiểm tra xem 2 địa danh hoặc chuỗi có liên quan nhau không
+// Làm sạch và trích xuất địa danh cốt lõi (loại bỏ từ hành chính xã, huyện, tỉnh, đảo, v.v.)
+export const cleanDestinationKeyword = (str) => {
+  if (!str) return '';
+  let s = removeVietnameseTones(str);
+  s = s.replace(/\b(xa|phuong|thi tran|huyen|thi xa|thanh pho|tp|tinh|dao|vinh|quan dao|quan the|khu du lich|chuyen di|kham pha|tham quan|du lich|tour)\b/g, ' ');
+  return s.replace(/\s+/g, ' ').trim();
+};
+
+// Kiểm tra xem 2 địa danh hoặc chuỗi có cùng điểm đến không (chính xác theo địa danh, không match bừa)
 export const matchDestination = (targetLocation, templateLocation, templateTitle = '') => {
-  if (!targetLocation) return false;
-  const cleanTarget = removeVietnameseTones(targetLocation);
-  const cleanTemplate = removeVietnameseTones(templateLocation);
-  const cleanTitle = removeVietnameseTones(templateTitle);
+  if (!targetLocation || !targetLocation.trim()) return false;
+  
+  const cleanTarget = cleanDestinationKeyword(targetLocation);
+  if (!cleanTarget) return false;
 
-  // Tách từ khóa quan trọng từ targetLocation
-  const targetWords = cleanTarget
-    .split(/[\s,]+/)
-    .filter(w => w.length > 1 && !['viet', 'nam', 'tp', 'thanh', 'pho', 'tinh'].includes(w));
+  const cleanTemplate = cleanDestinationKeyword(templateLocation);
+  const cleanTitle = cleanDestinationKeyword(templateTitle);
 
-  // Kiểm tra chứa trực tiếp
-  if (cleanTemplate.includes(cleanTarget) || cleanTarget.includes(cleanTemplate)) return true;
-  if (cleanTitle.includes(cleanTarget)) return true;
+  // 1. So khớp trực tiếp chuỗi địa danh cốt lõi (ví dụ: 'co to' trong 'dao co to', hoặc ngược lại)
+  if (cleanTemplate && (cleanTemplate.includes(cleanTarget) || cleanTarget.includes(cleanTemplate))) {
+    return true;
+  }
+  if (cleanTitle && cleanTitle.includes(cleanTarget)) {
+    return true;
+  }
 
-  // Kiểm tra các từ khóa chính
-  for (const word of targetWords) {
-    if (word.length >= 3 && (cleanTemplate.includes(word) || cleanTitle.includes(word))) {
+  // 2. Tách từ khóa địa danh có nghĩa theo từng cụm (từ 2 từ trở lên: ví dụ 'co to', 'ha giang', 'sa pa')
+  const targetTokens = cleanTarget.split(/[\s,]+/).filter(w => w.length >= 2 && !['viet', 'nam'].includes(w));
+  if (targetTokens.length >= 2) {
+    const fullPhrase = targetTokens.join(' ');
+    if ((cleanTemplate && cleanTemplate.includes(fullPhrase)) || (cleanTitle && cleanTitle.includes(fullPhrase))) {
       return true;
+    }
+  }
+
+  // 3. Nếu địa danh của target có phân đoạn dấu phẩy (ví dụ: "Xã Cô Tô, Huyện Cô Tô, Tỉnh Quảng Ninh")
+  const parts = targetLocation.split(',').map(p => cleanDestinationKeyword(p)).filter(Boolean);
+  for (const part of parts) {
+    if (part.length >= 3) {
+      if ((cleanTemplate && (cleanTemplate.includes(part) || part.includes(cleanTemplate))) ||
+          (cleanTitle && cleanTitle.includes(part))) {
+        return true;
+      }
     }
   }
 

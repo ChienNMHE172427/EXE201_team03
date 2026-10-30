@@ -628,6 +628,184 @@ namespace TravelWorkspace.API.Data
             }
 
             // =========================================================================
+            // TEMPLATE 4: "Khám phá Đảo Cô Tô - Thiên đường biển đảo Quảng Ninh" (3 ngày 2 đêm)
+            // =========================================================================
+            const string title4 = "Khám phá Đảo Cô Tô - Thiên đường biển đảo Quảng Ninh";
+            if (!await context.Trips.AnyAsync(t => t.Title == title4))
+            {
+                var trip4Start = baseDate;
+                var trip4End = trip4Start.AddDays(2); // 3 ngày 2 đêm
+                const string cotoImg = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80";
+
+                var trip4 = new Trip
+                {
+                    Title = title4,
+                    Origin = "Hà Nội",
+                    Destination = "Đảo Cô Tô",
+                    StartDate = trip4Start,
+                    EndDate = trip4End,
+                    Budget = 3200000,
+                    NumberOfParticipants = 4,
+                    Preferences = "Tắm biển, Check-in ngọn hải đăng, Ăn hải sản tươi sống, Ngắm hoàng hôn bãi Hồng Vàn",
+                    OwnerId = adminId,
+                    IsPublic = true,
+                    CloneCount = 196,
+                    ImageUrl = cotoImg,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Ngày 1: Hà Nội - Cảng Ao Tiên - Đảo Cô Tô
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Khởi hành từ Hà Nội đi Cảng Ao Tiên (Vân Đồn) bằng xe Limousine",
+                    Location = "Hà Nội -> Cảng quốc tế Ao Tiên, Vân Đồn",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = trip4Start.AddHours(6),
+                    EndTime = trip4Start.AddHours(9).AddMinutes(30),
+                    Transport = "Xe Limousine VIP",
+                    Assignee = "Trưởng nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Xe chạy cao tốc Hà Nội - Hải Phòng - Vân Đồn, đón trả tận bến cảng Ao Tiên."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Lên tàu cao tốc Tuần Châu Express ra Đảo Cô Tô",
+                    Location = "Cảng Ao Tiên -> Cảng tàu Cô Tô",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = trip4Start.AddHours(10),
+                    EndTime = trip4Start.AddHours(11).AddMinutes(15),
+                    Transport = "Tàu cao tốc",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Tàu 2 thân cao cấp êm ái, ngắm cảnh non nước Vịnh Bái Tử Long tuyệt đẹp."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Nhận phòng khách sạn & Thưởng thức bữa trưa hải sản Cô Tô",
+                    Location = "Thị trấn Cô Tô, Huyện Cô Tô, Quảng Ninh",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = trip4Start.AddHours(11).AddMinutes(30),
+                    EndTime = trip4Start.AddHours(13).AddMinutes(30),
+                    Transport = "Xe điện",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Thưởng thức mực một nắng nướng, tu hài nướng mỡ hành, ốc móng tay xào rau muống."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Tắm biển và ngắm hoàng hôn lãng mạn tại Bãi Hồng Vàn",
+                    Location = "Bãi biển Hồng Vàn, Đồng Tiến, Cô Tô",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = trip4Start.AddHours(15).AddMinutes(30),
+                    EndTime = trip4Start.AddHours(18).AddMinutes(30),
+                    Transport = "Xe máy",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Bãi cát trắng mịn, sóng biển êm đềm, check-in dãy nhà gỗ ven biển siêu xinh."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Tiệc BBQ nướng hải sản bãi biển & Dạo phố đêm Cô Tô",
+                    Location = "Bãi biển trung tâm thị trấn Cô Tô",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = trip4Start.AddHours(19),
+                    EndTime = trip4Start.AddHours(22),
+                    Transport = "Đi bộ",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Thưởng thức tôm nướng, ghẹ hấp sả, nhum nướng mỡ hành và nghe tiếng sóng vỗ."
+                });
+
+                // Ngày 2: Bãi đá Cầu Mỵ - Hải đăng Cô Tô - Đảo Cô Tô Con
+                var t4d2 = trip4Start.AddDays(1);
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Đón bình minh tuyệt mỹ tại Bãi đá Cầu Mỵ (Móng Rồng)",
+                    Location = "Bãi đá Cầu Mỵ, phía nam đảo Cô Tô",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = t4d2.AddHours(5).AddMinutes(30),
+                    EndTime = t4d2.AddHours(7).AddMinutes(30),
+                    Transport = "Xe máy",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Hệ thống đá trầm tích uốn lượn kỳ vĩ ngập tràn sóng biển đón ánh nắng đầu ngày."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Chinh phục Ngọn Hải Đăng Cô Tô ngắm toàn cảnh đảo",
+                    Location = "Ngọn hải đăng Cô Tô, đỉnh núi cao nhất đảo",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = t4d2.AddHours(8),
+                    EndTime = t4d2.AddHours(10),
+                    Transport = "Xe máy",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Leo 72 bậc thang xoắn ốc ngắm toàn cảnh rừng biển Cô Tô trong xanh bạt ngàn."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Đi cano khám phá Đảo Cô Tô Con hoang sơ nước trong vắt",
+                    Location = "Cảng Bắc Vàn -> Đảo Cô Tô Con",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = t4d2.AddHours(10).AddMinutes(30),
+                    EndTime = t4d2.AddHours(15),
+                    Transport = "Cano cao tốc",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Được mệnh danh thiên đường biển xanh, tha hồ lặn ngắm san hô và chụp ảnh check-in."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Tắm biển Bãi Vàn Chảy & Chiêm ngưỡng sóng biển tung bọt trắng",
+                    Location = "Bãi biển Vàn Chảy, Cô Tô",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = t4d2.AddHours(15).AddMinutes(30),
+                    EndTime = t4d2.AddHours(18),
+                    Transport = "Xe máy",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Bãi tắm thoai thoải, bờ cát rộng thích hợp chơi thể thao bãi biển."
+                });
+
+                // Ngày 3: Mua sắm đặc sản - Trở về Hà Nội
+                var t4d3 = trip4Start.AddDays(2);
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Ghé Chợ hải sản Cô Tô mua đặc sản Mực khô, Sá sùng làm quà",
+                    Location = "Chợ hải sản trung tâm Cô Tô",
+                    Destination = "Đảo Cô Tô",
+                    StartTime = t4d3.AddHours(7),
+                    EndTime = t4d3.AddHours(8).AddMinutes(30),
+                    Transport = "Đi bộ",
+                    Assignee = "Trưởng nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Mua mực một nắng, hải sản tươi đóng thùng xốp bảo quản đá tươi ngon."
+                });
+
+                trip4.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = "Lên tàu cao tốc trở về Cảng Ao Tiên & Xe Limousine về Hà Nội",
+                    Location = "Cảng Cô Tô -> Cảng Ao Tiên -> Hà Nội",
+                    Destination = "Hà Nội",
+                    StartTime = t4d3.AddHours(9).AddMinutes(30),
+                    EndTime = t4d3.AddHours(15),
+                    Transport = "Tàu cao tốc & Xe Limousine",
+                    Assignee = "Cả nhóm",
+                    Status = "Chưa bắt đầu",
+                    Notes = "Kết thúc chuyến du lịch Đảo Cô Tô 3 ngày 2 đêm tràn ngập kỷ niệm đẹp."
+                });
+
+                context.Trips.Add(trip4);
+            }
+
+            // =========================================================================
             // FORCE UPDATE: Tìm đích danh các Trip mẫu (theo Title hoặc Destination)
             // Bỏ qua các điều kiện chặn, gán cứng lại ImageUrl chuẩn xác và SaveChanges
             // =========================================================================
@@ -671,9 +849,19 @@ namespace TravelWorkspace.API.Data
                 t.ImageUrl = daNangImg;
             }
 
+            var allCoTo = await context.Trips.Where(t => t.Title.Contains("Cô Tô") || t.Destination.Contains("Cô Tô")).ToListAsync();
+            foreach (var t in allCoTo)
+            {
+                t.ImageUrl = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80";
+                if (t.Title.Contains("Khám phá Đảo Cô Tô"))
+                {
+                    t.IsPublic = true;
+                }
+            }
+
             // Các bản ghi cloned của người dùng hoặc chuyến đi riêng tư không hiển thị trên kho public mẫu
             var privateOrCloned = await context.Trips
-                .Where(t => !t.Title.Contains("Hà Giang") && !t.Title.Contains("Đà Nẵng") && !t.Title.Contains("Sapa"))
+                .Where(t => !t.Title.Contains("Hà Giang") && !t.Title.Contains("Đà Nẵng") && !t.Title.Contains("Sapa") && !t.Title.Contains("Cô Tô"))
                 .ToListAsync();
             foreach (var t in privateOrCloned)
             {
