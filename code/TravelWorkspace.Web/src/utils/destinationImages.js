@@ -46,45 +46,72 @@ export const removeVietnameseTones = (str) => {
 export const cleanDestinationKeyword = (str) => {
   if (!str) return '';
   let s = removeVietnameseTones(str);
-  s = s.replace(/\b(xa|phuong|thi tran|huyen|thi xa|thanh pho|tp|tinh|dao|vinh|quan dao|quan the|khu du lich|chuyen di|kham pha|tham quan|du lich|tour)\b/g, ' ');
+  s = s.replace(/\b(xa|phuong|thi tran|tt|huyen|thi xa|tx|thanh pho|tp|tinh|dao|quan dao|quan the|vinh|khu du lich|kdl|chuyen di|kham pha|tham quan|du lich|tour|lich trinh|trai nghiem|hanh trinh|nghi duong|checkin|check in|mua hoa|tu|den|di|ve|tai|o)\b/g, ' ');
   return s.replace(/\s+/g, ' ').trim();
+};
+
+// Danh sách các địa danh du lịch phổ biến để nhận diện và khớp chính xác 100%
+export const KNOWN_DESTINATIONS = [
+  'co to', 'ha giang', 'da nang', 'hoi an', 'sa pa', 'sapa', 'ninh binh', 
+  'ha long', 'phu quoc', 'da lat', 'cao bang', 'hue', 'quy nhon', 'nha trang', 
+  'vung tau', 'phu yen', 'ha noi', 'sai gon', 'ho chi minh', 'moc chau', 'mai chau', 
+  'ba be', 'cat ba', 'quan lan', 'ly son', 'con dao', 'phan thiet', 'mui ne'
+];
+
+export const detectKnownDestination = (str) => {
+  if (!str) return null;
+  const norm = removeVietnameseTones(str);
+  for (const d of KNOWN_DESTINATIONS) {
+    const regex = new RegExp(`(?:^|[\\s,.-])${d}(?:$|[\\s,.-])`);
+    if (regex.test(norm)) {
+      return (d === 'sapa') ? 'sa pa' : d;
+    }
+  }
+  return null;
 };
 
 // Kiểm tra xem 2 địa danh hoặc chuỗi có cùng điểm đến không (chính xác theo địa danh, không match bừa)
 export const matchDestination = (targetLocation, templateLocation, templateTitle = '') => {
   if (!targetLocation || !targetLocation.trim()) return false;
   
+  // 1. Nhận diện địa danh du lịch chính xác qua danh mục KNOWN_DESTINATIONS
+  const targetKnown = detectKnownDestination(targetLocation);
+  const tplDestKnown = detectKnownDestination(templateLocation);
+  const tplTitleKnown = detectKnownDestination(templateTitle);
+  const tplKnown = tplDestKnown || tplTitleKnown;
+
+  if (targetKnown && tplKnown) {
+    return targetKnown === tplKnown;
+  }
+
+  // Nếu target được nhận diện là một địa danh nổi tiếng (như 'co to') mà template không thuộc địa danh này
+  if (targetKnown && !tplKnown) {
+    const cleanTpl = cleanDestinationKeyword(templateLocation);
+    const cleanTtl = cleanDestinationKeyword(templateTitle);
+    return (cleanTpl && cleanTpl.includes(targetKnown)) || (cleanTtl && cleanTtl.includes(targetKnown));
+  }
+
+  // 2. Làm sạch từ khóa địa danh cốt lõi
   const cleanTarget = cleanDestinationKeyword(targetLocation);
   if (!cleanTarget) return false;
 
   const cleanTemplate = cleanDestinationKeyword(templateLocation);
   const cleanTitle = cleanDestinationKeyword(templateTitle);
 
-  // 1. So khớp trực tiếp chuỗi địa danh cốt lõi (ví dụ: 'co to' trong 'dao co to', hoặc ngược lại)
-  if (cleanTemplate && (cleanTemplate.includes(cleanTarget) || cleanTarget.includes(cleanTemplate))) {
+  // 3. So khớp trực tiếp chuỗi địa danh cốt lõi
+  if (cleanTemplate && (cleanTemplate === cleanTarget || cleanTemplate.includes(cleanTarget) || cleanTarget.includes(cleanTemplate))) {
     return true;
   }
   if (cleanTitle && cleanTitle.includes(cleanTarget)) {
     return true;
   }
 
-  // 2. Tách từ khóa địa danh có nghĩa theo từng cụm (từ 2 từ trở lên: ví dụ 'co to', 'ha giang', 'sa pa')
-  const targetTokens = cleanTarget.split(/[\s,]+/).filter(w => w.length >= 2 && !['viet', 'nam'].includes(w));
-  if (targetTokens.length >= 2) {
-    const fullPhrase = targetTokens.join(' ');
-    if ((cleanTemplate && cleanTemplate.includes(fullPhrase)) || (cleanTitle && cleanTitle.includes(fullPhrase))) {
-      return true;
-    }
-  }
-
-  // 3. Nếu địa danh của target có phân đoạn dấu phẩy (ví dụ: "Xã Cô Tô, Huyện Cô Tô, Tỉnh Quảng Ninh")
-  const parts = targetLocation.split(',').map(p => cleanDestinationKeyword(p)).filter(Boolean);
+  // 4. Nếu địa danh của target có phân đoạn dấu phẩy (ví dụ: "Xã Cô Tô, Huyện Cô Tô, Tỉnh Quảng Ninh")
+  const parts = targetLocation.split(',').map(p => cleanDestinationKeyword(p)).filter(p => p.length >= 3);
   for (const part of parts) {
-    if (part.length >= 3) {
-      if ((cleanTemplate && (cleanTemplate.includes(part) || part.includes(cleanTemplate))) ||
-          (cleanTitle && cleanTitle.includes(part))) {
-        return true;
-      }
+    if ((cleanTemplate && (cleanTemplate.includes(part) || part.includes(cleanTemplate))) ||
+        (cleanTitle && cleanTitle.includes(part))) {
+      return true;
     }
   }
 

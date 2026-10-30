@@ -73,10 +73,13 @@ const TemplateSuggestModal = ({
     const matched = [];
     const others = [];
 
+    const tripDest = currentTrip?.destination || '';
+
     templates.forEach(tpl => {
-      const isMatch = currentTrip 
-        ? matchDestination(currentTrip.destination, tpl.destination, tpl.title)
-        : false;
+      // Bỏ qua chuyến đi hiện tại (trùng ID)
+      if (currentTrip && tpl.id === currentTrip.id) return;
+
+      const isMatch = tripDest ? matchDestination(tripDest, tpl.destination, tpl.title) : false;
 
       if (isMatch) {
         matched.push(tpl);
@@ -259,7 +262,7 @@ const TemplateSuggestModal = ({
           ) : (
             <div className="template-cards-grid">
               {displayedTemplates.map((tpl) => {
-                const isMatched = currentTrip 
+                const isMatched = currentTrip?.destination 
                   ? matchDestination(currentTrip.destination, tpl.destination, tpl.title)
                   : false;
                 const isApplying = applyingTemplateId === tpl.id;

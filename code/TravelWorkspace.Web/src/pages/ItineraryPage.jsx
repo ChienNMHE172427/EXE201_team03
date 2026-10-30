@@ -1698,7 +1698,7 @@ const ItineraryPage = () => {
 
               {/* Banner Gợi ý Template Mẫu Phù Hợp Cho Chuyến Đi */}
               {(() => {
-                const matched = publicTemplates.filter(t => matchDestination(trip.destination, t.destination, t.title));
+                const matched = publicTemplates.filter(t => t.id !== trip?.id && matchDestination(trip.destination, t.destination, t.title));
 
                 if (matched.length === 0) {
                   return (
