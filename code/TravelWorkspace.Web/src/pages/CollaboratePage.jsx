@@ -58,7 +58,12 @@ const CollaboratePage = () => {
   }, [selectedTripId]);
 
   const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
   };
 
   // Smart Auto-scroll: Chỉ cuộn khi số lượng tin nhắn thực sự tăng lên
