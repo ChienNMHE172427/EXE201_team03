@@ -10,7 +10,7 @@ import TemplatePreviewModal from '../components/TemplatePreviewModal';
 import CloneTripModal from '../components/CloneTripModal';
 import TripNavigation from '../components/TripNavigation';
 import GoongMapView from '../components/GoongMapView';
-import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb, Share2, Globe, Lock, Loader2, ExternalLink } from 'lucide-react';
+import { UserPlus, Sparkles, Flame, Layers, Eye, CloudRain, Plus, Building, Bus, Utensils, Check, Search, MapPin, Coffee, Beer, ShoppingCart, Map, Compass, Leaf, Clock, CheckCircle, AlertCircle, RefreshCw, Umbrella, Lightbulb, Share2, Globe, Lock, Loader2, ExternalLink, X } from 'lucide-react';
 import servicesData from '../servicesData.json';
 import hotelLinks from '../hotelLinks.json';
 import getVexereLink from '../utils/getVexereLink';
@@ -158,9 +158,18 @@ const ItineraryPage = () => {
   }, [location.state?.justCreated]);
 
   // Handler khi áp dụng template thành công vào chuyến đi hiện tại
-  const handleApplyTemplateSuccess = (appliedTemplate) => {
+  const handleApplyTemplateSuccess = async (appliedTemplate) => {
     if (selectedTripId) {
-      fetchTripData(selectedTripId);
+      try {
+        const [tripRes, itemsRes] = await Promise.all([
+          api.get(`/Trip/${selectedTripId}`),
+          api.get(`/Itinerary/${selectedTripId}`)
+        ]);
+        if (tripRes.data) setTrip(tripRes.data);
+        if (itemsRes.data) setItems(itemsRes.data);
+      } catch (e) {
+        fetchTripData(selectedTripId);
+      }
     }
     setCloneToast(`🎉 Đã áp dụng thành công lịch trình mẫu "${appliedTemplate.title}" vào chuyến đi của bạn!`);
     setShowTemplateModal(false);
@@ -170,7 +179,7 @@ const ItineraryPage = () => {
     if (!selectedTripId) return;
     try {
       await api.post(`/trips/${selectedTripId}/apply-template/${targetTemplate.id}?overwrite=false`);
-      handleApplyTemplateSuccess(targetTemplate);
+      await handleApplyTemplateSuccess(targetTemplate);
     } catch (err) {
       console.error('Lỗi khi áp dụng template:', err);
       alert('Không thể áp dụng lịch trình mẫu lúc này. Vui lòng thử lại!');
@@ -180,6 +189,44 @@ const ItineraryPage = () => {
   // For adding new item
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedInfoItem, setSelectedInfoItem] = useState(null);
+  // Cuộn mượt màn hình lên khung chat Gemini AI
+  const scrollToAiChat = (customMessage = null) => {
+    setIsAiChatOpen(true);
+    if (customMessage) {
+      setMessages(prev => [...prev, { role: 'ai', content: customMessage }]);
+    }
+    setTimeout(() => {
+      const chatSection = document.querySelector('.chat-container') || document.querySelector('.chat-header') || document.querySelector('.split-layout');
+      if (chatSection) {
+        chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      const input = document.querySelector('.chat-input');
+      if (input) input.focus();
+    }, 150);
+  };
+
+  const handleOpenAddForm = () => {
+    let defaultStart = '';
+    let defaultEnd = '';
+    if (trip?.startDate) {
+      const datePart = trip.startDate.split('T')[0];
+      defaultStart = `${datePart}T08:00`;
+      defaultEnd = `${datePart}T10:00`;
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      defaultStart = `${today}T08:00`;
+      defaultEnd = `${today}T10:00`;
+    }
+    setNewItem(prev => ({
+      ...prev,
+      startTime: prev.startTime || defaultStart,
+      endTime: prev.endTime || defaultEnd
+    }));
+    setShowAddForm(true);
+  };
+
   const [newItem, setNewItem] = useState({
     title: '', location: '', notes: '', startTime: '', endTime: '', transport: '', assignee: '', status: 'Chưa bắt đầu'
   });
@@ -762,23 +809,28 @@ const ItineraryPage = () => {
           { id: 'sp-hotel-11', name: "Ngan Nga Legend", category: 'hotel', destination: "Bắc Hà & Dinh Hoàng A Tưởng", region: "Sa Pa / Lào Cai", notes: "Khách sạn trung tâm thị trấn Bắc Hà, thuận tiện tham quan chợ phiên cuối tuần.", rating: 4.6, affiliateUrl: "https://shorten.asia/NhPsy688" },
 
           // Ninh Bình
-          { id: 'nb-hotel-1', name: "Ninh Binh Hidden Charm Hotel & Resort", category: 'hotel', destination: "Tam Cốc - Bích Động & Hang Múa", region: "Ninh Bình", notes: "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc, hồ bơi ngoài trời.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
-          { id: 'nb-hotel-2', name: "Tam Coc Rice Fields Resort", category: 'hotel', destination: "Tam Cốc - Bích Động & Hang Múa", region: "Ninh Bình", notes: "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.", rating: 4.7, affiliateUrl: "https://shorten.asia/S3JcJAZ6" },
-          { id: 'nb-hotel-3', name: "Trang An Retreat", category: 'hotel', destination: "Quần thể Tràng An & Cố đô Hoa Lư", region: "Ninh Bình", notes: "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình, có hồ bơi nhìn ra núi.", rating: 4.8, affiliateUrl: "https://shorten.asia/z6CQVMef" },
-          { id: 'nb-hotel-4', name: "Emeralda Resort Ninh Binh", category: 'hotel', destination: "Chùa Bái Đính & Đầm Vân Long", region: "Ninh Bình", notes: "Resort 5 sao mang đậm kiến trúc cung đình và làng quê Bắc Bộ cổ kính.", rating: 4.9, affiliateUrl: "https://shorten.asia/429ha1PE" },
-          { id: 'nb-hotel-5', name: "The Reed Hotel Ninh Binh", category: 'hotel', destination: "TP. Ninh Bình, Tràng An & Hoa Lư", region: "Ninh Bình", notes: "Khách sạn 4 sao trung tâm thành phố Ninh Bình, dịch vụ cao cấp và ẩm thực phong phú.", rating: 4.7, affiliateUrl: "https://shorten.asia/JcA53PgX" },
-          { id: 'nb-hotel-6', name: "Ninh Binh Legend Hotel", category: 'hotel', destination: "TP. Ninh Bình, Tràng An & Bái Đính", region: "Ninh Bình", notes: "Khách sạn 5 sao tiêu chuẩn quốc tế với hồ bơi vô cực và view non nước hữu tình.", rating: 4.8, affiliateUrl: "https://shorten.asia/JcA53PgX" },
+          { id: 'nb-hotel-1', name: "Ninh Binh Hidden Charm Hotel & Resort", category: 'hotel', destination: "Tam Cốc - Bích Động & Hang Múa", region: "Ninh Bình", notes: "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc, hồ bơi ngoài trời.", rating: 4.8, affiliateUrl: "https://shorten.asia/NZSSpXUg" },
+          { id: 'nb-hotel-2', name: "Tam Coc Rice Fields Resort", category: 'hotel', destination: "Tam Cốc - Bích Động & Hang Múa", region: "Ninh Bình", notes: "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.", rating: 4.7, affiliateUrl: "https://shorten.asia/NZSSpXUg" },
+          { id: 'nb-hotel-3', name: "Trang An Retreat", category: 'hotel', destination: "Quần thể Tràng An & Cố đô Hoa Lư", region: "Ninh Bình", notes: "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình, có hồ bơi nhìn ra núi.", rating: 4.8, affiliateUrl: "https://shorten.asia/NZSSpXUg" },
+          { id: 'nb-hotel-4', name: "Emeralda Resort Ninh Binh", category: 'hotel', destination: "Chùa Bái Đính & Đầm Vân Long", region: "Ninh Bình", notes: "Resort 5 sao mang đậm kiến trúc cung đình và làng quê Bắc Bộ cổ kính.", rating: 4.9, affiliateUrl: "https://shorten.asia/NZSSpXUg" },
+          { id: 'nb-hotel-5', name: "The Reed Hotel Ninh Binh", category: 'hotel', destination: "TP. Ninh Bình, Tràng An & Hoa Lư", region: "Ninh Bình", notes: "Khách sạn 4 sao trung tâm thành phố Ninh Bình, dịch vụ cao cấp và ẩm thực phong phú.", rating: 4.7, affiliateUrl: "https://shorten.asia/NZSSpXUg" },
+          { id: 'nb-hotel-6', name: "Ninh Binh Legend Hotel", category: 'hotel', destination: "TP. Ninh Bình, Tràng An & Bái Đính", region: "Ninh Bình", notes: "Khách sạn 5 sao tiêu chuẩn quốc tế với hồ bơi vô cực và view non nước hữu tình.", rating: 4.8, affiliateUrl: "https://shorten.asia/NZSSpXUg" },
 
           // Hải Phòng / Cát Bà
-          { id: 'hp-hotel-1', name: "Khách sạn Giấc Mơ Cát Bà", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.", rating: 4.7, affiliateUrl: "https://shorten.asia/bVfmwTFr" },
-          { id: 'hp-hotel-2', name: "CatBa BackPackers Hostel & Pool Bar", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Hostel phong cách trẻ trung năng động có hồ bơi ngoài trời và quầy bar.", rating: 4.8, affiliateUrl: "https://shorten.asia/s8QFsSzn" },
-          { id: 'hp-hotel-3', name: "Cat Ba Wonder Hotel", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Khách sạn hiện đại ngay mặt đường chính thị trấn Cát Bà, gần bãi tắm Cát Cò.", rating: 4.7, affiliateUrl: "https://shorten.asia/pGCwVAfK" },
+          { id: 'hp-hotel-1', name: "Khách sạn Giấc Mơ Cát Bà", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.", rating: 4.7, affiliateUrl: "https://shorten.asia/SbGU3aAa" },
+          { id: 'hp-hotel-2', name: "CatBa BackPackers Hostel & Pool Bar", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Hostel phong cách trẻ trung năng động có hồ bơi ngoài trời và quầy bar.", rating: 4.8, affiliateUrl: "https://shorten.asia/SbGU3aAa" },
+          { id: 'hp-hotel-3', name: "Cat Ba Wonder Hotel", category: 'hotel', destination: "Đảo Cát Bà & Vịnh Lan Hạ", region: "Hải Phòng", notes: "Khách sạn hiện đại ngay mặt đường chính thị trấn Cát Bà, gần bãi tắm Cát Cò.", rating: 4.7, affiliateUrl: "https://shorten.asia/SbGU3aAa" },
 
           // Hà Giang & Cao Bằng
-          { id: 'hg-hotel-1', name: "Đồng Văn Eco Stone House", category: 'hotel', destination: "Phố cổ Đồng Văn, Lũng Cú & Mã Pí Lèng", region: "Hà Giang", notes: "Nhà đá truyền thống của người H'Mông độc đáo giữa lòng phố cổ Đồng Văn.", rating: 4.8, affiliateUrl: "https://shorten.asia/STy4Pakb" },
-          { id: 'hg-hotel-2', name: "H'mong Village Resort", category: 'hotel', destination: "Quản Bạ, Hoàng Su Phì & Dinh Vua Mèo", region: "Hà Giang", notes: "Khu nghỉ dưỡng bungalow quẩy tấu độc đáo giữa núi rừng Hà Giang hùng vĩ.", rating: 4.9, affiliateUrl: "https://shorten.asia/STy4Pakb" },
-          { id: 'cb-hotel-1', name: "Bản Giốc Resort", category: 'hotel', destination: "Thác Bản Giốc, Động Ngườm Ngao & Trùng Khánh", region: "Cao Bằng", notes: "Resort nghỉ dưỡng view nhìn trực diện dòng thác Bản Giốc hùng vĩ.", rating: 4.8, affiliateUrl: "https://shorten.asia/Nck74KXF" },
-          { id: 'cb-hotel-2', name: "Max Boutique Hotel Cao Bằng", category: 'hotel', destination: "TP. Cao Bằng, Pác Bó, Hồ Thăng Hen & Núi Mắt Thần", region: "Cao Bằng", notes: "Khách sạn tiện nghi sang trọng ngay trung tâm thành phố Cao Bằng.", rating: 4.8, affiliateUrl: "https://shorten.asia/Nck74KXF" }
+          { id: 'hg-hotel-1', name: "Đồng Văn Eco Stone House", category: 'hotel', destination: "Phố cổ Đồng Văn, Lũng Cú & Mã Pí Lèng", region: "Hà Giang", notes: "Nhà đá truyền thống của người H'Mông độc đáo giữa lòng phố cổ Đồng Văn.", rating: 4.8, affiliateUrl: "https://shorten.asia/rpvaS9xE" },
+          { id: 'hg-hotel-2', name: "H'mong Village Resort", category: 'hotel', destination: "Quản Bạ, Hoàng Su Phì & Dinh Vua Mèo", region: "Hà Giang", notes: "Khu nghỉ dưỡng bungalow quẩy tấu độc đáo giữa núi rừng Hà Giang hùng vĩ.", rating: 4.9, affiliateUrl: "https://shorten.asia/rpvaS9xE" },
+          { id: 'cb-hotel-1', name: "Bản Giốc Resort", category: 'hotel', destination: "Thác Bản Giốc, Động Ngườm Ngao & Trùng Khánh", region: "Cao Bằng", notes: "Resort nghỉ dưỡng view nhìn trực diện dòng thác Bản Giốc hùng vĩ.", rating: 4.8, affiliateUrl: "https://shorten.asia/WhffMebq" },
+          { id: 'cb-hotel-2', name: "Max Boutique Hotel Cao Bằng", category: 'hotel', destination: "TP. Cao Bằng, Pác Bó, Hồ Thăng Hen & Núi Mắt Thần", region: "Cao Bằng", notes: "Khách sạn tiện nghi sang trọng ngay trung tâm thành phố Cao Bằng.", rating: 4.8, affiliateUrl: "https://shorten.asia/WhffMebq" },
+          // Mộc Châu & Tam Đảo
+          { id: 'mc-hotel-1', name: "Thảo Nguyên Resort Mộc Châu", category: 'hotel', destination: "Đồi chè trái tim & Rừng thông Bản Áng", region: "Mộc Châu", notes: "Khu nghỉ dưỡng sinh thái cao cấp 4 sao với đồi cỏ xanh ngát và hồ bơi bốn mùa.", rating: 4.8, affiliateUrl: "https://shorten.asia/XZ2nVmTR" },
+          { id: 'mc-hotel-2', name: "Mộc Châu Eco Garden", category: 'hotel', destination: "Thung lũng mận Nà Ka & Thác Dải Yếm", region: "Mộc Châu", notes: "Khu nghỉ dưỡng sinh thái biệt lập giữa thiên nhiên hoa mận Mộc Châu thơ mộng.", rating: 4.8, affiliateUrl: "https://shorten.asia/XZ2nVmTR" },
+          { id: 'td-hotel-1', name: "Venus Hotel Tam Đảo", category: 'hotel', destination: "Cầu Mây, Nhà thờ đá & Cổng Trời", region: "Tam Đảo", notes: "Khách sạn 4 sao đẳng cấp phong cách Châu Âu ngay trung tâm thị trấn Tam Đảo mờ sương.", rating: 4.8, affiliateUrl: "https://shorten.asia/3V6QfyA8" },
+          { id: 'td-hotel-2', name: "Tam Đảo Belvedere Resort", category: 'hotel', destination: "Thác Bạc & Rừng quốc gia Tam Đảo", region: "Tam Đảo", notes: "Resort lưng chừng núi có hồ bơi vô cực ngắm mây trời Tam Đảo ngoạn mục.", rating: 4.8, affiliateUrl: "https://shorten.asia/3V6QfyA8" }
         ];
 
         // Map tra cứu URL chuẩn theo tên khách sạn để đảm bảo 100% có link affiliate shorten.asia
@@ -1492,7 +1544,7 @@ const ItineraryPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => setIsAiChatOpen(prev => !prev)}
+            onClick={() => isAiChatOpen ? setIsAiChatOpen(false) : scrollToAiChat()}
             className={`gemini-ai-toggle-btn ${isAiChatOpen ? 'active' : ''}`}
             title={isAiChatOpen ? "Thu gọn khung chat Gemini AI" : "Mở khung chat Gemini AI"}
           >
@@ -1541,35 +1593,232 @@ const ItineraryPage = () => {
 
 
       {showAddForm && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{maxWidth: 500, padding: 32, borderRadius: 24, background: '#fff'}}>
-            <h2 style={{ marginBottom: 24, fontSize: 24, color: 'var(--color-primary-dark)' }}>Thêm hoạt động mới</h2>
-            <form onSubmit={handleAddItem} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className="form-group">
-                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Tiêu đề</label>
-                <input type="text" value={newItem.title} onChange={e => setNewItem({...newItem, title: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
-              </div>
-              <div className="form-group">
-                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Địa điểm</label>
-                <input type="text" value={newItem.location} onChange={e => setNewItem({...newItem, location: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
-              </div>
-              <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-                <div className="form-group" style={{width: '100%'}}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Bắt đầu (Giờ & Ngày)</label>
-                  <input type="datetime-local" value={newItem.startTime} onChange={e => setNewItem({...newItem, startTime: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s', fontFamily: 'inherit', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(15, 23, 42, 0.72)', 
+            backdropFilter: 'blur(5px)', 
+            zIndex: 1300, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '16px',
+            overflowY: 'auto'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddForm(false);
+          }}
+        >
+          <div 
+            className="modal-content" 
+            style={{
+              maxWidth: 520, 
+              width: '100%',
+              maxHeight: 'calc(100vh - 32px)',
+              padding: 0, 
+              borderRadius: 20, 
+              background: '#fff',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '18px 24px',
+              borderBottom: '1px solid #f1f5f9',
+              background: '#f8fafc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: '#122B29',
+                  color: '#d2f47d',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Plus size={20} strokeWidth={2.5} />
                 </div>
-                <div className="form-group" style={{width: '100%'}}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Kết thúc (Giờ & Ngày)</label>
-                  <input type="datetime-local" value={newItem.endTime} onChange={e => setNewItem({...newItem, endTime: e.target.value})} required style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s', fontFamily: 'inherit', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'} />
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+                  Thêm hoạt động mới
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  transition: 'all 0.2s'
+                }}
+                title="Đóng"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Form Body */}
+            <form onSubmit={handleAddItem} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                    Tiêu đề hoạt động <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="VD: Tham quan Hang Múa, Ăn trưa đặc sản..."
+                    value={newItem.title} 
+                    onChange={e => setNewItem({...newItem, title: e.target.value})} 
+                    required 
+                    style={{ 
+                      width: '100%', 
+                      boxSizing: 'border-box',
+                      padding: '12px 14px', 
+                      borderRadius: 12, 
+                      border: '1.5px solid #e2e8f0', 
+                      fontSize: '16px', 
+                      outline: 'none',
+                      touchAction: 'manipulation'
+                    }} 
+                  />
+                </div>
+
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                    Địa điểm <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="VD: Ninh Hải, Hoa Lư, Ninh Bình..."
+                    value={newItem.location} 
+                    onChange={e => setNewItem({...newItem, location: e.target.value})} 
+                    required 
+                    style={{ 
+                      width: '100%', 
+                      boxSizing: 'border-box',
+                      padding: '12px 14px', 
+                      borderRadius: 12, 
+                      border: '1.5px solid #e2e8f0', 
+                      fontSize: '16px', 
+                      outline: 'none',
+                      touchAction: 'manipulation'
+                    }} 
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                      Bắt đầu <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input 
+                      type="datetime-local" 
+                      value={newItem.startTime} 
+                      onChange={e => setNewItem({...newItem, startTime: e.target.value})} 
+                      required 
+                      style={{ 
+                        width: '100%', 
+                        boxSizing: 'border-box',
+                        padding: '12px 14px', 
+                        borderRadius: 12, 
+                        border: '1.5px solid #e2e8f0', 
+                        fontSize: '16px', 
+                        outline: 'none', 
+                        fontFamily: 'inherit',
+                        touchAction: 'manipulation'
+                      }} 
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                      Kết thúc <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input 
+                      type="datetime-local" 
+                      value={newItem.endTime} 
+                      onChange={e => setNewItem({...newItem, endTime: e.target.value})} 
+                      required 
+                      style={{ 
+                        width: '100%', 
+                        boxSizing: 'border-box',
+                        padding: '12px 14px', 
+                        borderRadius: 12, 
+                        border: '1.5px solid #e2e8f0', 
+                        fontSize: '16px', 
+                        outline: 'none', 
+                        fontFamily: 'inherit',
+                        touchAction: 'manipulation'
+                      }} 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>
+                    Ghi chú / Lưu ý
+                  </label>
+                  <textarea 
+                    rows="3" 
+                    placeholder="Ghi chú đồ cần mang, vé vào cổng, số điện thoại..."
+                    value={newItem.notes} 
+                    onChange={e => setNewItem({...newItem, notes: e.target.value})} 
+                    style={{ 
+                      width: '100%', 
+                      boxSizing: 'border-box',
+                      padding: '12px 14px', 
+                      borderRadius: 12, 
+                      border: '1.5px solid #e2e8f0', 
+                      fontSize: '16px', 
+                      outline: 'none', 
+                      resize: 'vertical',
+                      touchAction: 'manipulation'
+                    }}
+                  />
                 </div>
               </div>
-              <div className="form-group">
-                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Ghi chú</label>
-                <textarea rows="3" value={newItem.notes} onChange={e => setNewItem({...newItem, notes: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--color-border)', fontSize: 15, outline: 'none', transition: 'border-color 0.2s', resize: 'vertical' }} onFocus={e => e.target.style.borderColor = 'var(--color-teal)'} onBlur={e => e.target.style.borderColor = 'var(--color-border)'}></textarea>
-              </div>
-              <div style={{display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24}}>
-                <button type="button" className="btn-secondary" onClick={() => setShowAddForm(false)}>Hủy</button>
-                <button type="submit" className="btn-primary">Lưu lại</button>
+
+              {/* Modal Footer */}
+              <div style={{
+                display: 'flex',
+                gap: 12,
+                justifyContent: 'flex-end',
+                padding: '16px 24px',
+                borderTop: '1px solid #f1f5f9',
+                background: '#fafbfc'
+              }}>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => setShowAddForm(false)}
+                  style={{ padding: '10px 18px', borderRadius: 10, fontSize: 15 }}
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary"
+                  style={{ padding: '10px 22px', borderRadius: 10, fontSize: 15, background: '#122B29', color: '#d2f47d' }}
+                >
+                  Lưu hoạt động
+                </button>
               </div>
             </form>
           </div>
@@ -1662,7 +1911,7 @@ const ItineraryPage = () => {
         <button
           type="button"
           className={`gemini-ai-fab ${isAiChatOpen ? 'is-open' : ''}`}
-          onClick={() => setIsAiChatOpen(prev => !prev)}
+          onClick={() => isAiChatOpen ? setIsAiChatOpen(false) : scrollToAiChat()}
           title={isAiChatOpen ? "Thu gọn chat Gemini AI" : "Mở chat Gemini AI"}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -1693,7 +1942,7 @@ const ItineraryPage = () => {
                   <Sparkles size={16} />
                   <span>Xem Template Lịch Trình Mẫu</span>
                 </button>
-                <button className="btn-primary" onClick={() => setShowAddForm(true)}>+ Thêm Hoạt động</button>
+                <button className="btn-primary" onClick={handleOpenAddForm}>+ Thêm Hoạt động</button>
               </div>
 
               {/* Banner Gợi ý Template Mẫu Phù Hợp Cho Chuyến Đi */}
@@ -1985,7 +2234,7 @@ const ItineraryPage = () => {
                         <span>Template lịch trình mẫu</span>
                       </button>
 
-                      <button className="btn-add-activity" onClick={() => setShowAddForm(true)} title="Thêm Hoạt động mới" style={{ padding: '8px', minWidth: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      <button className="btn-add-activity" onClick={handleOpenAddForm} title="Thêm Hoạt động mới" style={{ padding: '8px', minWidth: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <Plus size={20} strokeWidth={2.5} />
                       </button>
                     </div>
@@ -2045,12 +2294,7 @@ const ItineraryPage = () => {
                                   <button 
                                     className="btn-action-icon btn-ask-ai" 
                                     onClick={() => {
-                                      setIsAiChatOpen(true);
-                                      setMessages(prev => [...prev, { role: 'ai', content: `Bạn muốn thay đổi gì ở giai đoạn "${formatItemTitle(item.title)}"?` }]);
-                                      setTimeout(() => {
-                                        const input = document.querySelector('.chat-input');
-                                        if(input) input.focus();
-                                      }, 120);
+                                      scrollToAiChat(`Bạn muốn thay đổi gì ở giai đoạn "${formatItemTitle(item.title)}"?`);
                                     }}
                                     title="Hỏi trợ lý AI"
                                   >
@@ -2070,13 +2314,14 @@ const ItineraryPage = () => {
                                   i
                                 </button>
 
-                                {/* Selective Disabling 2: Nút Xóa (Khóa khi hoạt động đã qua trong quá khứ) */}
+                                {/* Nút Xóa */}
                                 <button 
-                                  className={`btn-delete-icon ${passed ? 'disabled' : ''}`} 
-                                  style={passed ? { color: '#fff', borderColor: 'rgba(255,255,255,0.3)', background: 'transparent' } : {}}
-                                  onClick={() => !passed && handleDelete(item.id)} 
-                                  disabled={passed}
-                                  title={passed ? "Không thể xóa hoạt động trong quá khứ" : "Xóa"}
+                                  className="btn-delete-icon" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(item.id);
+                                  }} 
+                                  title="Xóa hoạt động"
                                 >
                                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>

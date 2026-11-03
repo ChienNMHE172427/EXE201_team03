@@ -102,6 +102,20 @@ namespace TravelWorkspace.API.Services
 
             if (trip == null) return false;
 
+            var expenses = _context.Expenses.Where(e => e.TripId == tripId);
+            _context.Expenses.RemoveRange(expenses);
+            var members = _context.TripMembers.Where(m => m.TripId == tripId);
+            _context.TripMembers.RemoveRange(members);
+            var packing = _context.PackingItems.Where(p => p.TripId == tripId);
+            _context.PackingItems.RemoveRange(packing);
+            var itineraries = _context.ItineraryItems.Where(i => i.TripId == tripId);
+            _context.ItineraryItems.RemoveRange(itineraries);
+            var todos = _context.TodoItems.Where(td => td.TripId == tripId);
+            _context.TodoItems.RemoveRange(todos);
+            var messages = _context.Messages.Where(m => m.TripId == tripId);
+            _context.Messages.RemoveRange(messages);
+            var photos = _context.TripPhotos.Where(p => p.TripId == tripId);
+            _context.TripPhotos.RemoveRange(photos);
             _context.Trips.Remove(trip);
             await _context.SaveChangesAsync();
             return true;

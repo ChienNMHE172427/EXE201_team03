@@ -13,6 +13,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import api from '../services/api';
+import './PackingList.css';
 
 const CATEGORIES = [
   { name: 'Quần áo & Trang phục', icon: Shirt },
@@ -127,7 +128,7 @@ const PackingList = ({ tripId }) => {
   }
 
   return (
-    <div style={{ width: '100%', margin: '0 auto' }}>
+    <div className="packing-container">
       
       {/* Nút AI */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '16px' }}>
@@ -143,7 +144,7 @@ const PackingList = ({ tripId }) => {
       </div>
 
       {/* Danh sách accordion chia 2 cột */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', alignItems: 'start' }}>
+      <div className="packing-grid-container">
         {CATEGORIES.map(cat => {
           const catItems = items.filter(i => i.category === cat.name || (!i.category && cat.name === 'Vật dụng khác'));
           const Icon = cat.icon;
@@ -245,7 +246,7 @@ const PackingList = ({ tripId }) => {
                           onClick={() => handleToggleCheck(item.id)}
                           style={{ 
                             flex: 1, 
-                            fontSize: '15px', 
+                            fontSize: '16px', 
                             color: item.isChecked ? 'var(--color-text-muted)' : 'var(--color-text-main)',
                             textDecoration: item.isChecked ? 'line-through' : 'none',
                             cursor: 'pointer'
@@ -299,7 +300,7 @@ const PackingList = ({ tripId }) => {
                         background: 'transparent',
                         border: 'none',
                         outline: 'none',
-                        fontSize: '15px',
+                        fontSize: '16px',
                         color: 'var(--color-text-main)'
                       }}
                     />

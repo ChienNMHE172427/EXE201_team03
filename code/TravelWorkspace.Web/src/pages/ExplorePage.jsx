@@ -161,8 +161,16 @@ const ExplorePage = () => {
   });
 
   const getTravelokaLink = (svc) => {
-    if (!hotelLinks) return "https://www.traveloka.com";
-    return hotelLinks[svc.title] || "https://www.traveloka.com";
+    if (!hotelLinks) return 'https://www.traveloka.com';
+    if (hotelLinks[svc.title]) return hotelLinks[svc.title];
+    const text = ((svc.title || '') + ' ' + (svc.desc || '')).toLowerCase();
+    if (text.includes('ninh bình') || text.includes('tam cốc') || text.includes('tràng an')) return 'https://shorten.asia/NZSSpXUg';
+    if (text.includes('hà giang') || text.includes('đồng văn') || text.includes('mèo vạc')) return 'https://shorten.asia/rpvaS9xE';
+    if (text.includes('mộc châu')) return 'https://shorten.asia/XZ2nVmTR';
+    if (text.includes('cát bà') || text.includes('lan hạ')) return 'https://shorten.asia/SbGU3aAa';
+    if (text.includes('cao bằng') || text.includes('bản giốc')) return 'https://shorten.asia/WhffMebq';
+    if (text.includes('tam đảo')) return 'https://shorten.asia/3V6QfyA8';
+    return 'https://www.traveloka.com';
   };
 
   return (

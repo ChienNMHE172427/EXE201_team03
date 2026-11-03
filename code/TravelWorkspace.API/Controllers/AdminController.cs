@@ -127,6 +127,17 @@ namespace TravelWorkspace.API.Controllers
             });
         }
 
+        [AllowAnonymous]
+        [HttpPost("seed-report-data")]
+        public async Task<IActionResult> SeedReportData()
+        {
+            await Data.AdminSeeder.SeedAdminReportingDataAsync(_context);
+            var totalUsers = await _context.Users.CountAsync();
+            var totalTrips = await _context.Trips.CountAsync();
+            return Ok(new { message = "Seeded successfully", totalUsers, totalTrips });
+        }
+
+
         // --- PARTNERS ---
         [HttpGet("partners")]
         public async Task<IActionResult> GetPartners()

@@ -309,7 +309,7 @@ namespace TravelWorkspace.API.Data
                     Destination = "Đảo Cát Bà",
                     Category = "hotel",
                     Name = "Khách sạn Giấc Mơ Cát Bà",
-                    AffiliateUrl = "https://shorten.asia/bVfmwTFr",
+                    AffiliateUrl = "https://shorten.asia/SbGU3aAa",
                     Notes = "Khách sạn view vịnh Lan Hạ, thuận tiện đón tàu tham quan vịnh và đảo khỉ.",
                     Rating = 4.7,
                     IsActive = true
@@ -320,7 +320,7 @@ namespace TravelWorkspace.API.Data
                     Destination = "Đảo Cát Bà",
                     Category = "hotel",
                     Name = "CatBa BackPackers Hostel & Pool Bar",
-                    AffiliateUrl = "https://shorten.asia/s8QFsSzn",
+                    AffiliateUrl = "https://shorten.asia/SbGU3aAa",
                     Notes = "Hostel phong cách trẻ trung năng động có hồ bơi ngoài trời và quầy bar.",
                     Rating = 4.8,
                     IsActive = true
@@ -331,7 +331,7 @@ namespace TravelWorkspace.API.Data
                     Destination = "Đảo Cát Bà",
                     Category = "hotel",
                     Name = "Cat Ba Wonder Hotel",
-                    AffiliateUrl = "https://shorten.asia/pGCwVAfK",
+                    AffiliateUrl = "https://shorten.asia/SbGU3aAa",
                     Notes = "Khách sạn hiện đại ngay mặt đường chính thị trấn Cát Bà, gần bãi tắm Cát Cò.",
                     Rating = 4.7,
                     IsActive = true
@@ -346,7 +346,7 @@ namespace TravelWorkspace.API.Data
                     Destination = "Tam Cốc - Bích Động",
                     Category = "hotel",
                     Name = "Ninh Binh Hidden Charm Hotel & Resort",
-                    AffiliateUrl = "https://shorten.asia/JcA53PgX",
+                    AffiliateUrl = "https://shorten.asia/NZSSpXUg",
                     Notes = "Khách sạn nghỉ dưỡng 4 sao phong cách trang nhã bên bến thuyền Tam Cốc, hồ bơi ngoài trời.",
                     Rating = 4.8,
                     IsActive = true
@@ -357,7 +357,7 @@ namespace TravelWorkspace.API.Data
                     Destination = "Tam Cốc - Bích Động",
                     Category = "hotel",
                     Name = "Tam Coc Rice Fields Resort",
-                    AffiliateUrl = "https://shorten.asia/S3JcJAZ6",
+                    AffiliateUrl = "https://shorten.asia/NZSSpXUg",
                     Notes = "Resort view cánh đồng lúa bát ngát và rặng núi đá vôi nguyên sơ tuyệt đẹp.",
                     Rating = 4.7,
                     IsActive = true
@@ -368,7 +368,7 @@ namespace TravelWorkspace.API.Data
                     Destination = "Quần thể Tràng An",
                     Category = "hotel",
                     Name = "Trang An Retreat",
-                    AffiliateUrl = "https://shorten.asia/z6CQVMef",
+                    AffiliateUrl = "https://shorten.asia/NZSSpXUg",
                     Notes = "Khu bungalow mộc mạc ẩn mình giữa thung lũng Tràng An thanh bình, có hồ bơi nhìn ra núi.",
                     Rating = 4.8,
                     IsActive = true
@@ -379,7 +379,7 @@ namespace TravelWorkspace.API.Data
                     Destination = "Đầm Vân Long - Gia Viễn",
                     Category = "hotel",
                     Name = "Emeralda Resort Ninh Binh",
-                    AffiliateUrl = "https://shorten.asia/429ha1PE",
+                    AffiliateUrl = "https://shorten.asia/NZSSpXUg",
                     Notes = "Resort 5 sao mang đậm kiến trúc cung đình và làng quê Bắc Bộ cổ kính cạnh khu bảo tồn Vân Long.",
                     Rating = 4.9,
                     IsActive = true

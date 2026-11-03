@@ -1,0 +1,67 @@
+/* PackingList.css - 1 Single Column Vertical Layout */
+.packing-container {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.packing-grid-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.packing-card {
+  width: 100% !important;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.packing-card-header {
+  width: 100%;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.packing-card-body {
+  padding: 0 20px 20px 20px;
+}
+
+/* Mobile specific styling */
+@media screen and (max-width: 768px) {
+  .packing-container {
+    padding: 0 4px;
+  }
+
+  .packing-grid-container {
+    gap: 12px !important;
+  }
+
+  .packing-card {
+    border-radius: 16px !important;
+  }
+
+  .packing-card-header {
+    padding: 14px 16px !important;
+  }
+
+  .packing-card-body {
+    padding: 0 16px 16px 16px !important;
+  }
+
+  .delete-btn {
+    opacity: 0.9 !important;
+  }
+}

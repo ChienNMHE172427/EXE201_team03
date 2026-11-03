@@ -106,7 +106,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 24px;
   outline: none;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .chat-input-area input:focus, .todo-input-area input:focus {

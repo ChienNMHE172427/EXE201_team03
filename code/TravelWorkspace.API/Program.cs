@@ -41,6 +41,11 @@ string ConvertPostgresUrlToNpgsql(string url)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? builder.Configuration["DATABASE_URL"];
 
+if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("RMS_Group3_DB", StringComparison.OrdinalIgnoreCase))
+{
+    connectionString = "Server=(localdb)\\mssqllocaldb;Database=TravelWorkspaceDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+}
+
 bool isPostgres = !string.IsNullOrEmpty(connectionString) && 
     (connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) || 
      connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) || 
@@ -210,6 +215,7 @@ using (var scope = app.Services.CreateScope())
         try
         {
             await TravelWorkspace.API.Data.AffiliateSeeder.SeedAffiliateServicesAsync(context);
+            await TravelWorkspace.API.Data.AdminSeeder.SeedAdminReportingDataAsync(context);
         }
         catch (Exception affEx)
         {
