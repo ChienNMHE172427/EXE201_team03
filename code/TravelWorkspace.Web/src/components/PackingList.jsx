@@ -144,7 +144,7 @@ const PackingList = ({ tripId }) => {
       </div>
 
       {/* Danh sách accordion chia 2 cột */}
-      <div className="packing-grid-container">
+      <div className="packing-grid-container" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%", maxWidth: "860px", margin: "0 auto" }}>
         {CATEGORIES.map(cat => {
           const catItems = items.filter(i => i.category === cat.name || (!i.category && cat.name === 'Vật dụng khác'));
           const Icon = cat.icon;
